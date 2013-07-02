@@ -6,12 +6,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="{% static "css/pure.css" %}" type="text/css" media="screen" />
+  <link rel="stylesheet" href="{% static "css/crowdata.css" %}" type="text/css" media="screen" />
   <script src="{% static "js/jquery-2.0.2.js" %}"></script>
   <script src="{% static "js/crowdata.js" %}"></script>
   <script src="http://s3.documentcloud.org/viewer/loader.js"></script>
   <title>Crowdata</title>
 </head>
 <body>
+  <div class="pure-g">
+    <div class="pure-u-5-5" id="header">
+      <img src="{% static "img/crowdata.png" %}"><h1>crowdata</h1>
+    </div>
+  </div>
   <div class="pure-g">
     {% block content %}{% endblock %}
   </div>

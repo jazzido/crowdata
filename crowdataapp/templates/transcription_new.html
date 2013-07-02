@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% load forms_builder_tags %}
 {% block content %}
-<div class="pure-u-3-5">
-  <div id="document-cloud-viewer"></div>
+<div class="pure-u-3-5" >
+  <div id="document-viewer-container"></div>
 </div>
-<div class="pure-u-1-5">
+<div class="pure-u-2-5" id="form-container">
 {% render_built_form document.document_set.form %}
 </div>
 <script>
