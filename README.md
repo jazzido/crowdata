@@ -1,5 +1,5 @@
-crowdata
-========
+![Icon](https://raw.github.com/jazzido/crowdata/master/static/img/crowdata.png) crowdata
+========================================================================================
 
 Easily crowdsource the analysis of your documents
 
