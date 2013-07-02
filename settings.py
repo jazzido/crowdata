@@ -42,6 +42,7 @@ SITE_ID = 1
 # to load the internationalization machinery.
 USE_I18N = True
 
+
 # If you set this to False, Django will not format dates, numbers and
 # calendars according to the current locale
 USE_L10N = True
@@ -98,6 +99,8 @@ TEMPLATE_DIRS = (
     os.path.join(BASE_DIR, 'templates')
 )
 
+FORMS_BUILDER_USE_HTML5  = True
+
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -109,5 +112,6 @@ INSTALLED_APPS = (
     'django_extensions',
     'forms_builder.forms',
     'south',
+    'django_ace',
     'crowdata.crowdataapp'
 )

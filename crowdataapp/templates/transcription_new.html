@@ -7,16 +7,23 @@
 <div class="pure-u-1-5">
 {% render_built_form document.document_set.form %}
 </div>
-
 <script>
-  DV.load('{{ document_embed_url }}', {
-    container : '#document-cloud-viewer',
-    width: 600,
-    height: 990,
-    zoom: 'auto',
-    showSidebar: false,
-    embedded: true
-  });
+  {{ document.document_set.template_function|safe }}
+  insertDocument('{{document.url|safe}}');
 </script>
+<script>
+$(function() {
+    $('form').on('submit', function(event) {
+        event.preventDefault();
+        var serializedForm = $(this).serializeObject();
+        $.post($(this).attr('action'),
+              serializedForm,
+              function(data) {
+                  console.log(data);
+              });
+    });
+});
+</script>
+
 
 {% endblock %}

@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import *
+from django.conf.urls import *
 import forms_builder.forms.urls # add this import
 
 from django.contrib import admin
