@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load forms_builder_tags %}
+{% block content %}
+<div class="pure-u-3-5">
+  <div id="document-cloud-viewer"></div>
+</div>
+<div class="pure-u-1-5">
+{% render_built_form document.document_set.form %}
+</div>
+
+<script>
+  DV.load('{{ document_embed_url }}', {
+    container : '#document-cloud-viewer',
+    width: 600,
+    height: 990,
+    zoom: 'auto',
+    showSidebar: false,
+    embedded: true
+  });
+</script>
+
+{% endblock %}
