@@ -62,6 +62,10 @@ MEDIA_URL = ''
 ADMIN_MEDIA_PREFIX = '/media/'
 
 STATIC_URL = '/static/'
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+)
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
 )
@@ -102,6 +106,7 @@ TEMPLATE_DIRS = (
 FORMS_BUILDER_USE_HTML5  = True
 
 INSTALLED_APPS = (
+    'admintheme',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
