@@ -14,7 +14,7 @@ class FieldAdmin(NestedTabularInline):
     exclude = ('slug', )
 
 class DocumentSetFormInline(NestedStackedInline):
-    fields = ("title", "intro", "button_text", "response")
+    fields = ("title", "intro", "button_text")
     model = models.DocumentSetForm
     inlines = [FieldAdmin]
     show_url = False
@@ -38,9 +38,13 @@ class DocumentUserFormEntryInline(admin.TabularInline):
     def answers(self, obj):
         rv = '<ul>'
         form_fields = obj.form_entry.form.fields.all()
-        for f, e in zip(form_fields, obj.form_entry.fields.all()):
-            rv += "<li>%s: <strong>%s</strong></li>" % (f, e.value)
+        rv += ''.join(["<li>%s: %s</li>" % (f, e.value)
+                       for f, e in zip(form_fields,
+                                       obj.form_entry.fields.all())])
         rv += '</ul>'
+        print 'caca'
+        print rv
+
         return mark_safe(rv)
 
 class DocumentAdmin(admin.ModelAdmin):
