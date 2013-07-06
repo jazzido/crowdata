@@ -103,6 +103,6 @@ class DocumentAdmin(admin.ModelAdmin):
     entries_count.admin_order_field = 'entries_count'
 
 
-
 admin.site.register(models.DocumentSet, DocumentSetAdmin)
 admin.site.register(models.Document, DocumentAdmin)
+admin.site.unregister(forms_builder.forms.models.Form)
