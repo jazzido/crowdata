@@ -18,6 +18,7 @@ from crowdataapp import models
 class FieldAdmin(NestedTabularInline):
     model = forms_builder.forms.models.Field
     exclude = ('slug', )
+    extra = 1
 
 class DocumentSetFormInline(NestedStackedInline):
     fields = ("title", "intro", "button_text")
