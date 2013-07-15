@@ -16,7 +16,7 @@ import forms_builder
 from crowdataapp import models
 
 class FieldAdmin(NestedTabularInline):
-    model = forms_builder.forms.models.Field
+    model = models.DocumentSetFormField #forms_builder.forms.models.Field
     exclude = ('slug', )
     extra = 1
 
@@ -26,7 +26,15 @@ class DocumentSetFormInline(NestedStackedInline):
     inlines = [FieldAdmin]
     show_url = False
 
+
 class DocumentSetAdmin(NestedModelAdmin):
+
+    class Media:
+        css = {
+            'all': ('admin/css/document_set_admin.css', )
+        }
+        js = ('admin/js/document_set_admin.js',)
+
     formfield_overrides = {
         django.db.models.TextField: {'widget': AceWidget(mode='javascript') },
     }
@@ -107,3 +115,5 @@ class DocumentAdmin(admin.ModelAdmin):
 admin.site.register(models.DocumentSet, DocumentSetAdmin)
 admin.site.register(models.Document, DocumentAdmin)
 admin.site.unregister(forms_builder.forms.models.Form)
+from django.contrib.sites.models import Site
+admin.site.unregister(Site)
