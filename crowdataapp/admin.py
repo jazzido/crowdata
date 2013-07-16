@@ -8,6 +8,7 @@ from django.utils.safestring import mark_safe
 from django.db.models import Count
 from django.conf.urls import patterns, url
 from django.shortcuts import get_object_or_404
+from django.core.urlresolvers import reverse
 
 from django_ace import AceWidget
 from nested_inlines.admin import NestedModelAdmin,NestedTabularInline, NestedStackedInline
@@ -75,37 +76,42 @@ class DocumentSetAdmin(NestedModelAdmin):
         return rv
 
     def document_count(self, obj):
-        print obj
         return obj.documents.count()
 
     list_display = ('name', 'document_count', 'admin_links')
     inlines = [DocumentSetFormInline]
 
-class DocumentUserFormEntryInline(admin.TabularInline):
-    fields = ('user', 'answers')
-    readonly_fields = ('user', 'answers')
+class DocumentSetFormEntryInline(admin.TabularInline):
+    fields = ('user_link', 'answers')
+    readonly_fields = ('user_link', 'answers')
+    list_select_related = True
     model = models.DocumentSetFormEntry
 
     def answers(self, obj):
         rv = '<ul>'
-        form_fields = obj.form_entry.form.fields.all()
-        rv += ''.join(["<li>%s: %s</li>" % (f, e.value)
+        form_fields = obj.form.fields.all()
+        rv += ''.join(["<li>%s: <strong>%s</strong></li>" % (f.label, e.value)
                        for f, e in zip(form_fields,
-                                       obj.form_entry.fields.all())])
+                                       obj.fields.all())])
         rv += '</ul>'
-        print 'caca'
-        print rv
 
         return mark_safe(rv)
+
+
+    def user_link(self, obj):
+#        import ipdb; ipdb.set_trace()
+        url = reverse('admin:auth_user_change', args=(obj.user.id,))
+        return mark_safe('<a href="%s">%s</a>' % (url, obj.user))
+
 
 class DocumentAdmin(admin.ModelAdmin):
 
     def queryset(self, request):
-        return models.Document.objects.annotate(entries_count=Count('entries'))
+        return models.Document.objects.annotate(entries_count=Count('form_entries'))
 
     list_display = ('name', 'entries_count', 'document_set')
     list_filter = ('document_set__name',)
-    inlines = [DocumentUserFormEntryInline]
+    inlines = [DocumentSetFormEntryInline]
 
     def entries_count(self, doc):
         return doc.entries_count
