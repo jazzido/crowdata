@@ -13,7 +13,6 @@ class BuiltFormNode(template.Node):
 
     def render(self, context):
         request = context["request"]
-        user = getattr(request, "user", None)
         post = getattr(request, "POST", None)
         form = template.Variable(self.value).resolve(context)
         t = get_template("forms/includes/built_form.html")
@@ -36,6 +35,5 @@ def render_form(parser, token):
         arg = "form=" + arg
         name, value = arg.split("=", 1)
     except ValueError:
-        e = ()
-        raise template.TemplateSyntaxError(render_built_form.__doc__)
+        raise template.TemplateSyntaxError(render_form.__doc__)
     return BuiltFormNode(name, value)

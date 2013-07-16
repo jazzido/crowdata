@@ -1,8 +1,6 @@
-import re
 from urlparse import urlparse
 
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render_to_response
 from django.dispatch import receiver
 from django.core.urlresolvers import resolve, reverse
 from django.db.models import Count
