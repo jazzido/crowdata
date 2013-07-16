@@ -6,14 +6,13 @@ from django.core.urlresolvers import reverse
 from django_extensions.db import fields as django_extensions_fields
 import forms_builder
 
-DEFAULT_TEMPLATE_JS = """
-// Javascript function to insert the document into the DOM.
+DEFAULT_TEMPLATE_JS = """// Javascript function to insert the document into the DOM.
 // Receives the URL of the document as its only parameter.
 // Must be called insertDocument
 // JQuery is available
 // resulting element should be inserted into div#document-viewer-container
 function insertDocument(document_url) {
-o}
+}
 """
 
 # some mokeypatching, I don't want every field type to be available in forms
@@ -84,12 +83,65 @@ class DocumentSet(models.Model):
             + [entry_time_name]
 
 
-class DocumentSetForm(forms_builder.forms.models.Form):
+class DocumentSetForm(forms_builder.forms.models.AbstractForm):
     document_set = models.ForeignKey(DocumentSet, unique=True, related_name='form')
+    #document_set = models.OneToOneField(DocumentSet, parent_link=True)
 
-class DocumentSetFormField(forms_builder.forms.models.Field):
+    def autocomplete_fields(self):
+        """ Returns a list of every text field with autocompletion enabled """
+        return self.fields.all()
+
+    @models.permalink
+    def get_absolute_url(self):
+        return ('crowdata_form_detail', (), { 'slug': self.slug })
+
+class DocumentSetFormField(forms_builder.forms.models.AbstractField):
     autocomplete = models.BooleanField(_("Autocomplete"),
         help_text=_("If checked, this text field will have autocompletion"))
+    form = models.ForeignKey("DocumentSetForm", related_name="fields")
+    order = models.IntegerField(_("Order"), null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.order is None:
+            self.order = self.form.fields.count()
+        super(DocumentSetFormField, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        fields_after = self.form.fields.filter(order__gte=self.order)
+        fields_after.update(order=models.F("order") - 1)
+        super(DocumentSetFormField, self).delete(*args, **kwargs)
+
+class DocumentSetFormEntry(forms_builder.forms.models.AbstractFormEntry):
+    """ A :class:`forms_builder.forms.models.AbstractFormEntry` plus
+    foreign keys to the :class:`User` and filled the form and the
+    :class:`Document` it belongs to
+    """
+
+    form = models.ForeignKey("DocumentSetForm", related_name='entries')
+    document = models.ForeignKey('Document', related_name='form_entries', blank=True, null=True)
+    user = models.ForeignKey(User, blank=True, null=True)
+
+    # def to_dict(self):
+    #     form_fields = dict([(f.id, f.label)
+    #                         for f in self.form_entry.form.fields.all()])
+    #     entry_time_name = forms_builder.forms.models.FormEntry._meta.get_field('entry_time').verbose_name.title()
+
+    #     rv = dict()
+    #     rv['user'] = str(self.user.pk)
+    #     rv[Document._meta.get_field('name').verbose_name.title()] = self.document.name
+    #     rv[Document._meta.get_field('url').verbose_name.title()] = self.document.url
+
+    #     for field_entry in self.form_entry.fields.all():
+    #         rv[form_fields[field_entry.field_id]] = field_entry.value
+
+    #     rv[entry_time_name] = self.form_entry.entry_time
+
+    #     return rv
+
+
+class DocumentSetFieldEntry(forms_builder.forms.models.AbstractFieldEntry):
+    entry = models.ForeignKey("DocumentSetFormEntry", related_name="fields")
+
 
 class Document(models.Model):
     name = models.CharField(_('Document title'), max_length=256, editable=True, null=True)
@@ -106,29 +158,3 @@ class Document(models.Model):
     class Meta:
         verbose_name = _('Document')
         verbose_name_plural = _('Documents')
-
-class DocumentUserFormEntry(models.Model):
-    """The answer (an instance of :class:`forms_builder.forms.models.FormEntry`)
-    provided by a :class:`User` for a :class:`Document`
-    """
-
-    user = models.ForeignKey(User, null=True)
-    form_entry = models.ForeignKey(forms_builder.forms.models.FormEntry)
-    document = models.ForeignKey(Document, related_name='entries')
-
-    def to_dict(self):
-        form_fields = dict([(f.id, f.label)
-                            for f in self.form_entry.form.fields.all()])
-        entry_time_name = forms_builder.forms.models.FormEntry._meta.get_field('entry_time').verbose_name.title()
-
-        rv = dict()
-        rv['user'] = str(self.user.pk)
-        rv[Document._meta.get_field('name').verbose_name.title()] = self.document.name
-        rv[Document._meta.get_field('url').verbose_name.title()] = self.document.url
-
-        for field_entry in self.form_entry.fields.all():
-            rv[form_fields[field_entry.field_id]] = field_entry.value
-
-        rv[entry_time_name] = self.form_entry.entry_time
-
-        return rv

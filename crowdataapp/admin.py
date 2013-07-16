@@ -16,7 +16,7 @@ import forms_builder
 from crowdataapp import models
 
 class FieldAdmin(NestedTabularInline):
-    model = models.DocumentSetFormField #forms_builder.forms.models.Field
+    model = models.DocumentSetFormField
     exclude = ('slug', )
     extra = 1
 
@@ -56,8 +56,8 @@ class DocumentSetAdmin(NestedModelAdmin):
 
         writer.writeheader()
 
-        for entry in models.DocumentUserFormEntry.objects.filter(document__in=document_set.documents.all()):
-            writer.writerow(self._encode_dict_for_csv(entry.to_dict()))
+        # for entry in models.DocumentUserFormEntry.objects.filter(document__in=document_set.documents.all()):
+        #     writer.writerow(self._encode_dict_for_csv(entry.to_dict()))
 
         return response
 
@@ -84,7 +84,7 @@ class DocumentSetAdmin(NestedModelAdmin):
 class DocumentUserFormEntryInline(admin.TabularInline):
     fields = ('user', 'answers')
     readonly_fields = ('user', 'answers')
-    model = models.DocumentUserFormEntry
+    model = models.DocumentSetFormEntry
 
     def answers(self, obj):
         rv = '<ul>'

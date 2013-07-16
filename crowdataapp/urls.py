@@ -7,5 +7,8 @@ urlpatterns = patterns('',
                            name='new_transcription'),
                        url(r'(?P<document_set>[\w-]+)/another',
                            views.redirect_to_new_transcription,
-                           name='get_new_transcription')
+                           name='get_new_transcription'),
+                       url(r'crowdata/form/(?P<slug>[\w-]+)',
+                           views.form_detail,
+                           name='crowdata_form_detail')
 )

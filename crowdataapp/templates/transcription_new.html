@@ -1,11 +1,15 @@
 {% extends "base.html" %}
-{% load forms_builder_tags %}
+{% load crowdataapp_tags %}
+{% load static from staticfiles %}
+{% block scripts %}
+<script src="{% static "crowdataapp/js/typeahead.min.js" %}"></script>
+{% endblock %}
 {% block content %}
 <div class="pure-u-3-5" >
   <div id="document-viewer-container"></div>
 </div>
 <div class="pure-u-2-5" id="form-container">
-{% render_built_form document.document_set.form.all.0 %}
+{% render_form document.document_set.form.all.0 %}
 </div>
 <script>
   {{ document.document_set.template_function|safe }}
@@ -31,6 +35,5 @@ $(function() {
                   });
 });
 </script>
-
 
 {% endblock %}

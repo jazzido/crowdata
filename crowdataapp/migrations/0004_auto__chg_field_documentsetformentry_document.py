@@ -8,20 +8,14 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding unique constraint on 'DocumentSetForm', fields ['document_set']
-        db.create_unique(u'crowdataapp_documentsetform', ['document_set_id'])
 
-
-        # Changing field 'DocumentUserFormEntry.user'
-        db.alter_column(u'crowdataapp_documentuserformentry', 'user_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], null=True))
+        # Changing field 'DocumentSetFormEntry.document'
+        db.alter_column(u'crowdataapp_documentsetformentry', 'document_id', self.gf('django.db.models.fields.related.ForeignKey')(null=True, to=orm['crowdataapp.Document']))
 
     def backwards(self, orm):
-        # Removing unique constraint on 'DocumentSetForm', fields ['document_set']
-        db.delete_unique(u'crowdataapp_documentsetform', ['document_set_id'])
 
-
-        # Changing field 'DocumentUserFormEntry.user'
-        db.alter_column(u'crowdataapp_documentuserformentry', 'user_id', self.gf('django.db.models.fields.related.ForeignKey')(default=None, to=orm['auth.User']))
+        # Changing field 'DocumentSetFormEntry.document'
+        db.alter_column(u'crowdataapp_documentsetformentry', 'document_id', self.gf('django.db.models.fields.related.ForeignKey')(default=None, to=orm['crowdataapp.Document']))
 
     models = {
         u'auth.group': {
@@ -62,7 +56,7 @@ class Migration(SchemaMigration):
         },
         u'crowdataapp.document': {
             'Meta': {'object_name': 'Document'},
-            'document_set': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['crowdataapp.DocumentSet']"}),
+            'document_set': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'documents'", 'to': u"orm['crowdataapp.DocumentSet']"}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '256', 'null': 'True'}),
             'url': ('django.db.models.fields.URLField', [], {'max_length': "'512'"})
@@ -73,23 +67,19 @@ class Migration(SchemaMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': "'128'"}),
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'name'", 'overwrite': 'False'}),
-            'template_function': ('django.db.models.fields.TextField', [], {'default': "'\\n// Javascript function to insert the document into the DOM.\\n// Receives the URL of the document as its only parameter.\\n// Must be called insertDocument\\n// JQuery is available\\n// resulting element should be inserted into div#document-viewer-container\\nfunction insertDocument(document_url) {\\n}\\n'"})
+            'template_function': ('django.db.models.fields.TextField', [], {'default': "'// Javascript function to insert the document into the DOM.\\n// Receives the URL of the document as its only parameter.\\n// Must be called insertDocument\\n// JQuery is available\\n// resulting element should be inserted into div#document-viewer-container\\nfunction insertDocument(document_url) {\\n}\\n'"})
+        },
+        u'crowdataapp.documentsetfieldentry': {
+            'Meta': {'object_name': 'DocumentSetFieldEntry'},
+            'entry': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'fields'", 'to': u"orm['crowdataapp.DocumentSetFormEntry']"}),
+            'field_id': ('django.db.models.fields.IntegerField', [], {}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'value': ('django.db.models.fields.CharField', [], {'max_length': '2000', 'null': 'True'})
         },
         u'crowdataapp.documentsetform': {
-            'Meta': {'object_name': 'DocumentSetForm', '_ormbases': [u'forms.Form']},
-            'document_set': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['crowdataapp.DocumentSet']", 'unique': 'True'}),
-            u'form_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': u"orm['forms.Form']", 'unique': 'True', 'primary_key': 'True'})
-        },
-        u'crowdataapp.documentuserformentry': {
-            'Meta': {'object_name': 'DocumentUserFormEntry'},
-            'document': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'entries'", 'to': u"orm['crowdataapp.Document']"}),
-            'form_entry': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['forms.FormEntry']"}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['auth.User']", 'null': 'True'})
-        },
-        u'forms.form': {
-            'Meta': {'object_name': 'Form'},
+            'Meta': {'object_name': 'DocumentSetForm'},
             'button_text': ('django.db.models.fields.CharField', [], {'default': "u'Submit'", 'max_length': '50'}),
+            'document_set': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'form'", 'unique': 'True', 'to': u"orm['crowdataapp.DocumentSet']"}),
             'email_copies': ('django.db.models.fields.CharField', [], {'max_length': '200', 'blank': 'True'}),
             'email_from': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'email_message': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
@@ -106,11 +96,29 @@ class Migration(SchemaMigration):
             'status': ('django.db.models.fields.IntegerField', [], {'default': '2'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '50'})
         },
-        u'forms.formentry': {
-            'Meta': {'object_name': 'FormEntry'},
+        u'crowdataapp.documentsetformentry': {
+            'Meta': {'object_name': 'DocumentSetFormEntry'},
+            'document': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'form_entries'", 'null': 'True', 'to': u"orm['crowdataapp.Document']"}),
             'entry_time': ('django.db.models.fields.DateTimeField', [], {}),
-            'form': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'entries'", 'to': u"orm['forms.Form']"}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
+            'form': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'entries'", 'to': u"orm['crowdataapp.DocumentSetForm']"}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['auth.User']", 'null': 'True'})
+        },
+        u'crowdataapp.documentsetformfield': {
+            'Meta': {'object_name': 'DocumentSetFormField'},
+            'autocomplete': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'choices': ('django.db.models.fields.CharField', [], {'max_length': '1000', 'blank': 'True'}),
+            'default': ('django.db.models.fields.CharField', [], {'max_length': '2000', 'blank': 'True'}),
+            'field_type': ('django.db.models.fields.IntegerField', [], {}),
+            'form': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'fields'", 'to': u"orm['crowdataapp.DocumentSetForm']"}),
+            'help_text': ('django.db.models.fields.CharField', [], {'max_length': '100', 'blank': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'label': ('django.db.models.fields.CharField', [], {'max_length': '200'}),
+            'order': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
+            'placeholder_text': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
+            'required': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+            'slug': ('django.db.models.fields.SlugField', [], {'default': "''", 'max_length': '100', 'blank': 'True'}),
+            'visible': ('django.db.models.fields.BooleanField', [], {'default': 'True'})
         },
         u'sites.site': {
             'Meta': {'ordering': "('domain',)", 'object_name': 'Site', 'db_table': "'django_site'"},
