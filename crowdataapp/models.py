@@ -98,7 +98,7 @@ class DocumentSetForm(forms_builder.forms.models.AbstractForm):
 class DocumentSetFormField(forms_builder.forms.models.AbstractField):
     autocomplete = models.BooleanField(_("Autocomplete"),
         help_text=_("If checked, this text field will have autocompletion"))
-    form = models.ForeignKey("DocumentSetForm", related_name="fields")
+    form = models.ForeignKey(DocumentSetForm, related_name="fields")
     order = models.IntegerField(_("Order"), null=True, blank=True)
 
     def save(self, *args, **kwargs):
@@ -121,22 +121,22 @@ class DocumentSetFormEntry(forms_builder.forms.models.AbstractFormEntry):
     document = models.ForeignKey('Document', related_name='form_entries', blank=True, null=True)
     user = models.ForeignKey(User, blank=True, null=True)
 
-    # def to_dict(self):
-    #     form_fields = dict([(f.id, f.label)
-    #                         for f in self.form_entry.form.fields.all()])
-    #     entry_time_name = forms_builder.forms.models.FormEntry._meta.get_field('entry_time').verbose_name.title()
+    def to_dict(self):
+        form_fields = dict([(f.id, f.label)
+                            for f in self.form.fields.all()])
+        entry_time_name = forms_builder.forms.models.FormEntry._meta.get_field('entry_time').verbose_name.title()
 
-    #     rv = dict()
-    #     rv['user'] = str(self.user.pk)
-    #     rv[Document._meta.get_field('name').verbose_name.title()] = self.document.name
-    #     rv[Document._meta.get_field('url').verbose_name.title()] = self.document.url
+        rv = dict()
+        rv['user'] = str(self.user.pk)
+        rv[Document._meta.get_field('name').verbose_name.title()] = self.document.name
+        rv[Document._meta.get_field('url').verbose_name.title()] = self.document.url
 
-    #     for field_entry in self.form_entry.fields.all():
-    #         rv[form_fields[field_entry.field_id]] = field_entry.value
+        for field_entry in self.form_entry.fields.all():
+            rv[form_fields[field_entry.field_id]] = field_entry.value
 
-    #     rv[entry_time_name] = self.form_entry.entry_time
+        rv[entry_time_name] = self.form_entry.entry_time
 
-    #     return rv
+        return rv
 
 
 class DocumentSetFieldEntry(forms_builder.forms.models.AbstractFieldEntry):

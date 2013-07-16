@@ -34,6 +34,10 @@
   width: 5%
 }
 
+.crowdataapp-documentset.change-form .vLargeTextField {
+    height: 100px;
+}
+
 input:disabled {
   background-color: rgb(230,230,230);
 }

@@ -16,7 +16,7 @@ import forms_builder
 
 from crowdataapp import models
 
-class FieldAdmin(NestedTabularInline):
+class DocumentSetFormFieldAdmin(NestedTabularInline):
     model = models.DocumentSetFormField
     exclude = ('slug', )
     extra = 1
@@ -24,9 +24,8 @@ class FieldAdmin(NestedTabularInline):
 class DocumentSetFormInline(NestedStackedInline):
     fields = ("title", "intro", "button_text")
     model = models.DocumentSetForm
-    inlines = [FieldAdmin]
+    inlines = [DocumentSetFormFieldAdmin]
     show_url = False
-
 
 class DocumentSetAdmin(NestedModelAdmin):
 
@@ -39,6 +38,8 @@ class DocumentSetAdmin(NestedModelAdmin):
     formfield_overrides = {
         django.db.models.TextField: {'widget': AceWidget(mode='javascript') },
     }
+    list_display = ('name', 'document_count', 'admin_links')
+    inlines = [DocumentSetFormInline]
 
     def get_urls(self):
         urls = super(DocumentSetAdmin, self).get_urls()
@@ -57,8 +58,8 @@ class DocumentSetAdmin(NestedModelAdmin):
 
         writer.writeheader()
 
-        # for entry in models.DocumentUserFormEntry.objects.filter(document__in=document_set.documents.all()):
-        #     writer.writerow(self._encode_dict_for_csv(entry.to_dict()))
+        for entry in models.DocumentSetFormEntry.objects.filter(document__in=document_set.documents.all()):
+            writer.writerow(self._encode_dict_for_csv(entry.to_dict()))
 
         return response
 
@@ -78,8 +79,6 @@ class DocumentSetAdmin(NestedModelAdmin):
     def document_count(self, obj):
         return obj.documents.count()
 
-    list_display = ('name', 'document_count', 'admin_links')
-    inlines = [DocumentSetFormInline]
 
 class DocumentSetFormEntryInline(admin.TabularInline):
     fields = ('user_link', 'answers')
@@ -99,7 +98,6 @@ class DocumentSetFormEntryInline(admin.TabularInline):
 
 
     def user_link(self, obj):
-#        import ipdb; ipdb.set_trace()
         url = reverse('admin:auth_user_change', args=(obj.user.id,))
         return mark_safe('<a href="%s">%s</a>' % (url, obj.user))
 
