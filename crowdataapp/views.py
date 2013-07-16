@@ -23,9 +23,7 @@ def create_entry(sender=None, form=None, entry=None, **kwargs):
         document_id = resolve(urlparse(sender.META['HTTP_REFERER']).path).kwargs['document_id']
         entry.document = models.Document.objects.get(pk=document_id)
         entry.user = sender.user
-        models.DocumentSetFormEntry.objects.create(user=sender.user,
-                                                    form_entry=entry,
-                                                    document_id=document_id)
+        entry.save()
     except:
         # should probably delete the 'entry' here
         pass
