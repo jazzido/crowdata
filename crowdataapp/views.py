@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from urlparse import urlparse
 
 from django.shortcuts import get_object_or_404, redirect, render_to_response
@@ -32,14 +34,22 @@ def invalid_entry(sender=None, form=None, **kwargs):
 
 def redirect_to_new_transcription(request, document_set):
     doc_set = get_object_or_404(models.DocumentSet, slug=document_set)
-    document_id = resolve(urlparse(request.META['HTTP_REFERER']).path).kwargs['document_id']
-    print document_id
+    
+    #document_id = resolve(urlparse(request.META['HTTP_REFERER']).path).kwargs['document_id']
+
+    if request.user.is_authenticated():     
+        documents_to_exclude = [ entry.document.id for entry in models.DocumentSetFormEntry.objects \
+                                .filter(user_id=request.user.id, document__document_set_id=doc_set.id) \
+                                ]
+    else:
+        documents_to_exclude = []
+    
 
     candidates = models.Document \
-                       .objects.annotate(entries_count=Count('entries')) \
-                               .filter(document_set=doc_set,
-                                       entries_count__lt=doc_set.entries_threshold) \
-                               .exclude(pk=document_id)
+                        .objects.annotate(entries_count=Count('form_entries')) \
+                                .filter(document_set=doc_set,
+                                        entries_count__lt=doc_set.entries_threshold) \
+                                .exclude(pk__in=documents_to_exclude)
 
     if candidates.count() == 0:
         # TODO What to do? What to do?
