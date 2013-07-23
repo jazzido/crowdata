@@ -2,6 +2,8 @@ from django.db import models
 from django.utils.translation import ugettext, ugettext_lazy as _
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.db.models import Count
+
 
 from django_extensions.db import fields as django_extensions_fields
 import forms_builder
@@ -155,6 +157,34 @@ class Document(models.Model):
         return reverse('crowdataapp.views.transcription_new',
                        args=[self.document_set.slug, self.pk])
 
+    def validity_rate(self):
+        """
+            avg of validity per fields:
+            se definie como sumatoria(max(iguales)/total)/total
+        """
+        
+        counts = [self.field_validity_rate(field) for field in DocumentSetFormEntry.objects.filter(document_id=self.id)]
+        
+        return sum(counts)/len(counts)
+        
+        
+    def field_validity_rate(self, field):
+        """
+            Field: a DocumentSetFormEntry
+        """
+        
+#         I think the elegant solution is this.
+#         return DocumentSetFieldEntry.objects.values('value').annotate(c=Count('value')).filter(entry__document_id=self.id, field_id=field.id).order_by('c').aggregate(Avg('c'))
+#         But it seams to be a bug in django models that results in this error: "DatabaseError: near "FROM": syntax error"
+#         https://code.djangoproject.com/ticket/15624
+    
+                
+        coincidence_count = DocumentSetFieldEntry.objects.values('value').annotate(count=Count('value')).filter(entry__document_id=self.id, field_id=field.id).order_by('count')[0]['count']
+        quantity = DocumentSetFieldEntry.objects.filter(entry__document_id=self.id, field_id=field.id).aggregate(total=Count('pk'))['total']
+        
+        return float(coincidence_count) / quantity 
+        
     class Meta:
         verbose_name = _('Document')
         verbose_name_plural = _('Documents')
+        
