@@ -6,6 +6,7 @@ from django.db.models import Count
 
 
 from django_extensions.db import fields as django_extensions_fields
+
 import forms_builder
 
 DEFAULT_TEMPLATE_JS = """// Javascript function to insert the document into the DOM.
@@ -84,6 +85,15 @@ class DocumentSet(models.Model):
                for f in form.fields.all()] \
             + [entry_time_name]
 
+    def get_pending_documents(self):
+#         TODO: 
+#             Today it returns the documents that have been "scrapped" less than threshold times.
+#             It should return the documents that haven't been validated (ie: they have at least one non validated field) 
+        return Document \
+                        .objects.annotate(entries_count=Count('form_entries')) \
+                        .filter(document_set=self,
+                                        entries_count__lt=self.entries_threshold)
+
 
 class DocumentSetForm(forms_builder.forms.models.AbstractForm):
     document_set = models.ForeignKey(DocumentSet, unique=True, related_name='form')
@@ -160,11 +170,10 @@ class Document(models.Model):
     def validity_rate(self):
         """
             avg of validity per fields:
-            se definie como sumatoria(max(iguales)/total)/total
         """
         
-        counts = [self.field_validity_rate(field) for field in DocumentSetFormEntry.objects.filter(document_id=self.id)]
-        
+        # TODO: find a more elegant solution, maybe in a sigle query.
+        counts = [self.field_validity_rate(field) for field in DocumentSetFormEntry.objects.filter(document_id=self.id)]        
         return sum(counts)/len(counts)
         
         
@@ -173,16 +182,32 @@ class Document(models.Model):
             Field: a DocumentSetFormEntry
         """
         
-#         I think the elegant solution is this.
+#         I think the elegant solution is this:
 #         return DocumentSetFieldEntry.objects.values('value').annotate(c=Count('value')).filter(entry__document_id=self.id, field_id=field.id).order_by('c').aggregate(Avg('c'))
 #         But it seams to be a bug in django models that results in this error: "DatabaseError: near "FROM": syntax error"
 #         https://code.djangoproject.com/ticket/15624
+#         That's that the non-so-efficient field_coincidences is called
     
                 
-        coincidence_count = DocumentSetFieldEntry.objects.values('value').annotate(count=Count('value')).filter(entry__document_id=self.id, field_id=field.id).order_by('count')[0]['count']
+        coincidence_count = self.field_coincidences(field)
         quantity = DocumentSetFieldEntry.objects.filter(entry__document_id=self.id, field_id=field.id).aggregate(total=Count('pk'))['total']
         
         return float(coincidence_count) / quantity 
+
+    def field_coincidences(self, field):
+        return DocumentSetFieldEntry.objects.values('value').annotate(count=Count('value')).filter(entry__document_id=self.id, field_id=field.id).order_by('count')[0]['count']
+        
+    def validated(self):
+        """
+            True if each entry has more than the required threshold equal values; thus, the document was successfully crod scrapped.
+            TODO: 
+                get methods for document values.
+                ie: 
+                    if d is a Document. d['an entry'] returns the validated value.
+            
+        """        
+        threshold = self.document_set.entries_threshold
+        return all([self.field_coincidences(field) >= threshold for field in DocumentSetFormEntry.objects.filter(document_id=self.id)])        
         
     class Meta:
         verbose_name = _('Document')
