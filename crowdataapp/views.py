@@ -22,11 +22,14 @@ def create_entry(sender=None, form=None, entry=None, **kwargs):
     try:
         document_id = resolve(urlparse(sender.META['HTTP_REFERER']).path).kwargs['document_id']
         entry.document = models.Document.objects.get(pk=document_id)
-        entry.user = sender.user
+        
+        if sender.user.is_authenticated():
+            entry.user = sender.user
         entry.save()
     except:
         # should probably delete the 'entry' here
-        pass
+        entry.delete()
+        raise
 
 @receiver(form_invalid)
 def invalid_entry(sender=None, form=None, **kwargs):
@@ -37,15 +40,10 @@ def redirect_to_new_transcription(request, document_set):
     
     #document_id = resolve(urlparse(request.META['HTTP_REFERER']).path).kwargs['document_id']
     
-    if request.user.is_authenticated():     
-        documents_to_exclude = [ entry.document.id for entry in models.DocumentSetFormEntry.objects \
-                                .filter(user_id=request.user.id, document__document_set_id=doc_set.id) \
-                                ]
-    else:
-        documents_to_exclude = []
+    candidates = doc_set.get_pending_documents()
     
-
-    candidates = doc_set.get_pending_documents().exclude(pk__in=documents_to_exclude)
+    if request.user.is_authenticated():     
+        cantidates = candidates.exclude(form_entries__user=request.user)
 
     if candidates.count() == 0:
         # TODO What to do? What to do?
