@@ -86,14 +86,10 @@ class DocumentSet(models.Model):
             + [entry_time_name]
 
     def get_pending_documents(self):
-#         TODO: 
-#             Today it returns the documents that have been "scrapped" less than threshold times.
-#             It should return the documents that haven't been validated (ie: they have at least one non validated field) 
         return Document \
-                        .objects.annotate(entries_count=Count('form_entries')) \
-                        .filter(document_set=self,
-                                        entries_count__lt=self.entries_threshold)
-
+                    .objects.annotate(entries_count=Count('form_entries')) \
+                    .filter(document_set=self,
+                            entries_count__lt=self.entries_threshold)
 
 class DocumentSetForm(forms_builder.forms.models.AbstractForm):
     document_set = models.ForeignKey(DocumentSet, unique=True, related_name='form')
@@ -153,6 +149,7 @@ class DocumentSetFormEntry(forms_builder.forms.models.AbstractFormEntry):
 
 class DocumentSetFieldEntry(forms_builder.forms.models.AbstractFieldEntry):
     entry = models.ForeignKey("DocumentSetFormEntry", related_name="fields")
+    field = models.ForeignKey("DocumentSetFormField", related_name="entry_fields")
 
 
 class Document(models.Model):
@@ -173,7 +170,7 @@ class Document(models.Model):
         """
         
         # TODO: find a more elegant solution, maybe in a sigle query.
-        counts = [self.field_validity_rate(field) for field in DocumentSetFormEntry.objects.filter(document_id=self.id)]        
+        counts = [self.field_validity_rate(field) for field in DocumentSetFormField.objects.filter(form__document_set=self.document_set)]        
         return sum(counts)/len(counts)
         
         
@@ -195,20 +192,26 @@ class Document(models.Model):
         return float(coincidence_count) / quantity 
 
     def field_coincidences(self, field):
-        return DocumentSetFieldEntry.objects.values('value').annotate(count=Count('value')).filter(entry__document_id=self.id, field_id=field.id).order_by('count')[0]['count']
+        result = DocumentSetFieldEntry.objects.values('value').annotate(count=Count('value')).filter(entry__document=self, field=field).order_by('-count')        
+        return result[0]['count'] if result else 0
         
     def validated(self):
         """
             True if each entry has more than the required threshold equal values; thus, the document was successfully crod scrapped.
-            TODO: 
-                get methods for document values.
-                ie: 
-                    if d is a Document. d['an entry'] returns the validated value.
-            
+            This is not right: is inconsistent with get_pending_documents, which interprets the threshold per entry.
         """        
         threshold = self.document_set.entries_threshold
-        return all([self.field_coincidences(field) >= threshold for field in DocumentSetFormEntry.objects.filter(document_id=self.id)])        
-        
+        return all([self.field_coincidences(field) >= threshold for field in DocumentSetFormField.objects.filter(form__document_set_id=self.document_set.id)])        
+    
+    def __getitem__(self, key):
+        """
+            returns the most repeated value for a given field.
+        """
+        return DocumentSetFieldEntry.objects \
+                .filter(entry__document=self, field__label=key) \
+                .values('value').annotate(count=Count('value')) \
+                .order_by()[0]['value']
+    
     class Meta:
         verbose_name = _('Document')
         verbose_name_plural = _('Documents')
