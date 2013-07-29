@@ -43,7 +43,7 @@ def redirect_to_new_transcription(request, document_set):
     candidates = doc_set.get_pending_documents()
     
     if request.user.is_authenticated():     
-        cantidates = candidates.exclude(form_entries__user=request.user)
+        candidates = candidates.exclude(form_entries__user=request.user)
 
     if candidates.count() == 0:
         # TODO What to do? What to do?
