@@ -72,7 +72,7 @@ def form_detail(request, slug, template="forms/form_detail.html"):
         else:
             entry = form_for_form.save()
             form_valid.send(sender=request, form=form_for_form, entry=entry)
-            return HttpResponse('') #redirect(reverse('form_sent', kwargs={"slug": form.slug}))
+            return redirect(reverse('form_sent', kwargs={"slug": form.slug}))
     return render_to_response(template, { 'form': form }, request_context)
 
 @render_to('transcription_new.html')
