@@ -86,6 +86,10 @@ class DocumentSet(models.Model):
             + [entry_time_name]
 
     def get_pending_documents(self):
+        """
+        DocumentSet.get_pending_documents(): returns a django.db.models.query.QuerySet, giving the document set's documents that were no already validated. Note that since it is a QuerySet it is possible to filter them later without an extra query.
+        """
+
         q = """
         id IN (
             SELECT DISTINCT id FROM 
@@ -189,6 +193,8 @@ class Document(models.Model):
 
     def validity_rate(self):
         """
+            Document.validity_rate(): a 0 to 1 rate which shows how much controversial (or difficult to read maybe) was the document, even if it is already considered validated. It is implemented as the avarage of the ratio of each field (defined as the number of matching responses / total responses).
+            
             avg of validity per fields:
         """
         
@@ -220,6 +226,8 @@ class Document(models.Model):
         
     def validated(self):
         """
+            Document.validated(): returns True if the document has at least the document set's threshold coincidental entries for each DocumentSetFormField. That way, if, for example, if threshold=3, and a field receives three different answers for the same field, it won't be considered validated, until it has three matching answers.
+            
             True if each entry has more than the required threshold equal values; thus, the document was successfully crod scrapped.
             This is not right: is inconsistent with get_pending_documents, which interprets the threshold per entry.
         """        
@@ -228,6 +236,8 @@ class Document(models.Model):
     
     def get_answer(self, key):
         """
+            Document.get_answer(): takes and entry key (its slug) and return a tuple with: the most coincidental value, how many matching answers it has and its validity rate (defined as the number of matching responses / total responses).
+
             returns the most repeated value for a given field, it occurences and its validity rate in a tuple
         """
         max_field_count = DocumentSetFieldEntry.objects \
