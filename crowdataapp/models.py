@@ -2,8 +2,11 @@ from django.db import models
 from django.utils.translation import ugettext, ugettext_lazy as _
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.db.models import Count
+
 
 from django_extensions.db import fields as django_extensions_fields
+
 import forms_builder
 
 DEFAULT_TEMPLATE_JS = """// Javascript function to insert the document into the DOM.
@@ -82,6 +85,34 @@ class DocumentSet(models.Model):
                for f in form.fields.all()] \
             + [entry_time_name]
 
+    def get_pending_documents(self):
+        q = """
+        id IN (
+            SELECT DISTINCT id FROM 
+                (SELECT *, 
+                        "crowdataapp_documentsetfieldentry"."value", 
+                        "crowdataapp_documentsetfieldentry"."field_id", 
+                        COUNT("crowdataapp_documentsetfieldentry"."value") AS "c" 
+                 FROM "crowdataapp_document" 
+                     LEFT OUTER JOIN "crowdataapp_documentsetformentry" ON ("crowdataapp_document"."id" = "crowdataapp_documentsetformentry"."document_id") 
+                     LEFT OUTER JOIN "crowdataapp_documentsetfieldentry" ON ("crowdataapp_documentsetformentry"."id" = "crowdataapp_documentsetfieldentry"."entry_id") 
+                 WHERE "crowdataapp_document"."document_set_id" = %s  
+                 GROUP BY    "crowdataapp_documentsetfieldentry"."value", 
+                             "crowdataapp_documentsetfieldentry"."field_id", 
+                             "crowdataapp_document"."id" ) 
+            GROUP BY field_id, id 
+            HAVING max(c) < %s
+        )
+            """
+        
+        return self.documents.extra(where=[q], params=[self.id, self.entries_threshold])
+        
+        
+         
+#         return Document \
+#                     .objects.annotate(entries_count=Count('form_entries')) \
+#                     .filter(document_set=self,
+#                             entries_count__lt=self.entries_threshold)
 
 class DocumentSetForm(forms_builder.forms.models.AbstractForm):
     document_set = models.ForeignKey(DocumentSet, unique=True, related_name='form')
@@ -141,6 +172,7 @@ class DocumentSetFormEntry(forms_builder.forms.models.AbstractFormEntry):
 
 class DocumentSetFieldEntry(forms_builder.forms.models.AbstractFieldEntry):
     entry = models.ForeignKey("DocumentSetFormEntry", related_name="fields")
+    #field = models.ForeignKey("DocumentSetFormField", related_name="entry_fields")
 
 
 class Document(models.Model):
@@ -155,6 +187,59 @@ class Document(models.Model):
         return reverse('crowdataapp.views.transcription_new',
                        args=[self.document_set.slug, self.pk])
 
+    def validity_rate(self):
+        """
+            avg of validity per fields:
+        """
+        
+        # TODO: find a more elegant solution, maybe in a sigle query.
+        counts = [self.__field_validity_rate(field) for field in DocumentSetFormField.objects.filter(form__document_set=self.document_set)]        
+        return sum(counts)/len(counts)
+        
+        
+    def __field_validity_rate(self, field):
+        """
+            Field: a DocumentSetFormEntry
+        """
+        
+#         I think the elegant solution is this:
+#         return DocumentSetFieldEntry.objects.values('value').annotate(c=Count('value')).filter(entry__document_id=self.id, field_id=field.id).order_by('c').aggregate(Avg('c'))
+#         But it seams to be a bug in django models that results in this error: "DatabaseError: near "FROM": syntax error"
+#         https://code.djangoproject.com/ticket/15624
+#         That's that the non-so-efficient field_coincidences is called
+    
+        coincidence_count = self.__field_coincidences(field)
+        return float(coincidence_count) / self.form_entries.count() 
+
+    def __field_coincidences(self, field):
+        """ 
+            Returns how many times a same value for a field was given.
+        """
+        result = DocumentSetFieldEntry.objects.values('value').annotate(count=Count('value')).filter(entry__document=self, field=field).order_by('-count')        
+        return result[0]['count'] if result else 0
+        
+    def validated(self):
+        """
+            True if each entry has more than the required threshold equal values; thus, the document was successfully crod scrapped.
+            This is not right: is inconsistent with get_pending_documents, which interprets the threshold per entry.
+        """        
+        threshold = self.document_set.entries_threshold
+        return all([self.__field_coincidences(field) >= threshold for field in DocumentSetFormField.objects.filter(form__document_set_id=self.document_set.id)])        
+    
+    def get_answer(self, key):
+        """
+            returns the most repeated value for a given field, it occurences and its validity rate in a tuple
+        """
+        max_field_count = DocumentSetFieldEntry.objects \
+                .filter(entry__document=self, field__slug=key) \
+                .values('value').annotate(count=Count('value')) \
+                .order_by()[0]
+                
+        total_field_count = self.form_entries.count()
+        return (max_field_count['value'], max_field_count['count'], float(max_field_count['count']) / self.form_entries.count())
+
+    
     class Meta:
         verbose_name = _('Document')
         verbose_name_plural = _('Documents')
+        

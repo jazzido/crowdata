@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from urlparse import urlparse
 
 from django.shortcuts import get_object_or_404, redirect, render_to_response
@@ -5,11 +7,11 @@ from django.dispatch import receiver
 from django.core.urlresolvers import resolve, reverse
 from django.db.models import Count
 from django.template import RequestContext
+from django.http import HttpResponse
 
 from annoying.decorators import render_to
 from forms_builder.forms.signals import form_valid, form_invalid
 from forms_builder.forms.forms import FormForForm
-
 from crowdataapp import models
 
 @receiver(form_valid)
@@ -20,11 +22,14 @@ def create_entry(sender=None, form=None, entry=None, **kwargs):
     try:
         document_id = resolve(urlparse(sender.META['HTTP_REFERER']).path).kwargs['document_id']
         entry.document = models.Document.objects.get(pk=document_id)
-        entry.user = sender.user
+        
+        if sender.user.is_authenticated():
+            entry.user = sender.user
         entry.save()
     except:
         # should probably delete the 'entry' here
-        pass
+        entry.delete()
+        raise
 
 @receiver(form_invalid)
 def invalid_entry(sender=None, form=None, **kwargs):
@@ -32,14 +37,13 @@ def invalid_entry(sender=None, form=None, **kwargs):
 
 def redirect_to_new_transcription(request, document_set):
     doc_set = get_object_or_404(models.DocumentSet, slug=document_set)
-    document_id = resolve(urlparse(request.META['HTTP_REFERER']).path).kwargs['document_id']
-    print document_id
-
-    candidates = models.Document \
-                       .objects.annotate(entries_count=Count('entries')) \
-                               .filter(document_set=doc_set,
-                                       entries_count__lt=doc_set.entries_threshold) \
-                               .exclude(pk=document_id)
+    
+    #document_id = resolve(urlparse(request.META['HTTP_REFERER']).path).kwargs['document_id']
+    
+    candidates = doc_set.get_pending_documents()
+    
+    if request.user.is_authenticated():     
+        candidates = candidates.exclude(form_entries__user=request.user)
 
     if candidates.count() == 0:
         # TODO What to do? What to do?
@@ -68,7 +72,7 @@ def form_detail(request, slug, template="forms/form_detail.html"):
         else:
             entry = form_for_form.save()
             form_valid.send(sender=request, form=form_for_form, entry=entry)
-            return redirect(reverse('form_sent', kwargs={"slug": form.slug}))
+            return HttpResponse('') #redirect(reverse('form_sent', kwargs={"slug": form.slug}))
     return render_to_response(template, { 'form': form }, request_context)
 
 @render_to('transcription_new.html')
