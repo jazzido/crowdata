@@ -51,6 +51,10 @@ class DocumentSet(models.Model):
                                             null=False,
                                             help_text=_('Maximum number of times each document will be shown to users.'))
 
+    head_html = models.TextField(default='<!-- <script> or <link rel="stylesheet"> tags go here -->',
+                                 null=True,
+                                 help_text=_('HTML to be inserted in the <head> element in this page'))
+
     class Meta:
         verbose_name = _('Document Set')
         verbose_name_plural = _('Document Sets')
@@ -92,27 +96,27 @@ class DocumentSet(models.Model):
 
         q = """
         id IN (
-            SELECT DISTINCT id FROM 
-                (SELECT *, 
-                        "crowdataapp_documentsetfieldentry"."value", 
-                        "crowdataapp_documentsetfieldentry"."field_id", 
-                        COUNT("crowdataapp_documentsetfieldentry"."value") AS "c" 
-                 FROM "crowdataapp_document" 
-                     LEFT OUTER JOIN "crowdataapp_documentsetformentry" ON ("crowdataapp_document"."id" = "crowdataapp_documentsetformentry"."document_id") 
-                     LEFT OUTER JOIN "crowdataapp_documentsetfieldentry" ON ("crowdataapp_documentsetformentry"."id" = "crowdataapp_documentsetfieldentry"."entry_id") 
-                 WHERE "crowdataapp_document"."document_set_id" = %s  
-                 GROUP BY    "crowdataapp_documentsetfieldentry"."value", 
-                             "crowdataapp_documentsetfieldentry"."field_id", 
-                             "crowdataapp_document"."id" ) 
-            GROUP BY field_id, id 
+            SELECT DISTINCT id FROM
+                (SELECT *,
+                        "crowdataapp_documentsetfieldentry"."value",
+                        "crowdataapp_documentsetfieldentry"."field_id",
+                        COUNT("crowdataapp_documentsetfieldentry"."value") AS "c"
+                 FROM "crowdataapp_document"
+                     LEFT OUTER JOIN "crowdataapp_documentsetformentry" ON ("crowdataapp_document"."id" = "crowdataapp_documentsetformentry"."document_id")
+                     LEFT OUTER JOIN "crowdataapp_documentsetfieldentry" ON ("crowdataapp_documentsetformentry"."id" = "crowdataapp_documentsetfieldentry"."entry_id")
+                 WHERE "crowdataapp_document"."document_set_id" = %s
+                 GROUP BY    "crowdataapp_documentsetfieldentry"."value",
+                             "crowdataapp_documentsetfieldentry"."field_id",
+                             "crowdataapp_document"."id" )
+            GROUP BY field_id, id
             HAVING max(c) < %s
         )
             """
-        
+
         return self.documents.extra(where=[q], params=[self.id, self.entries_threshold])
-        
-        
-         
+
+
+
 #         return Document \
 #                     .objects.annotate(entries_count=Count('form_entries')) \
 #                     .filter(document_set=self,
@@ -194,46 +198,46 @@ class Document(models.Model):
     def validity_rate(self):
         """
             Document.validity_rate(): a 0 to 1 rate which shows how much controversial (or difficult to read maybe) was the document, even if it is already considered validated. It is implemented as the avarage of the ratio of each field (defined as the number of matching responses / total responses).
-            
+
             avg of validity per fields:
         """
-        
+
         # TODO: find a more elegant solution, maybe in a sigle query.
-        counts = [self.__field_validity_rate(field) for field in DocumentSetFormField.objects.filter(form__document_set=self.document_set)]        
+        counts = [self.__field_validity_rate(field) for field in DocumentSetFormField.objects.filter(form__document_set=self.document_set)]
         return sum(counts)/len(counts)
-        
-        
+
+
     def __field_validity_rate(self, field):
         """
             Field: a DocumentSetFormEntry
         """
-        
+
 #         I think the elegant solution is this:
 #         return DocumentSetFieldEntry.objects.values('value').annotate(c=Count('value')).filter(entry__document_id=self.id, field_id=field.id).order_by('c').aggregate(Avg('c'))
 #         But it seams to be a bug in django models that results in this error: "DatabaseError: near "FROM": syntax error"
 #         https://code.djangoproject.com/ticket/15624
 #         That's that the non-so-efficient field_coincidences is called
-    
+
         coincidence_count = self.__field_coincidences(field)
-        return float(coincidence_count) / self.form_entries.count() 
+        return float(coincidence_count) / self.form_entries.count()
 
     def __field_coincidences(self, field):
-        """ 
+        """
             Returns how many times a same value for a field was given.
         """
-        result = DocumentSetFieldEntry.objects.values('value').annotate(count=Count('value')).filter(entry__document=self, field=field).order_by('-count')        
+        result = DocumentSetFieldEntry.objects.values('value').annotate(count=Count('value')).filter(entry__document=self, field=field).order_by('-count')
         return result[0]['count'] if result else 0
-        
+
     def validated(self):
         """
             Document.validated(): returns True if the document has at least the document set's threshold coincidental entries for each DocumentSetFormField. That way, if, for example, if threshold=3, and a field receives three different answers for the same field, it won't be considered validated, until it has three matching answers.
-            
+
             True if each entry has more than the required threshold equal values; thus, the document was successfully crod scrapped.
             This is not right: is inconsistent with get_pending_documents, which interprets the threshold per entry.
-        """        
+        """
         threshold = self.document_set.entries_threshold
-        return all([self.__field_coincidences(field) >= threshold for field in DocumentSetFormField.objects.filter(form__document_set_id=self.document_set.id)])        
-    
+        return all([self.__field_coincidences(field) >= threshold for field in DocumentSetFormField.objects.filter(form__document_set_id=self.document_set.id)])
+
     def get_answer(self, key):
         """
             Document.get_answer(): takes and entry key (its slug) and return a tuple with: the most coincidental value, how many matching answers it has and its validity rate (defined as the number of matching responses / total responses).
@@ -244,12 +248,11 @@ class Document(models.Model):
                 .filter(entry__document=self, field__slug=key) \
                 .values('value').annotate(count=Count('value')) \
                 .order_by()[0]
-                
+
         total_field_count = self.form_entries.count()
         return (max_field_count['value'], max_field_count['count'], float(max_field_count['count']) / self.form_entries.count())
 
-    
+
     class Meta:
         verbose_name = _('Document')
         verbose_name_plural = _('Documents')
-        
