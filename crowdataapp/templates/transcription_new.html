@@ -3,6 +3,7 @@
 {% load static from staticfiles %}
 {% block scripts %}
 <script src="{% static "crowdataapp/js/typeahead.min.js" %}"></script>
+{{ head_html|safe }}
 {% endblock %}
 {% block content %}
 <div class="pure-u-3-5" >

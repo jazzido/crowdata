@@ -22,7 +22,7 @@ def create_entry(sender=None, form=None, entry=None, **kwargs):
     try:
         document_id = resolve(urlparse(sender.META['HTTP_REFERER']).path).kwargs['document_id']
         entry.document = models.Document.objects.get(pk=document_id)
-        
+
         if sender.user.is_authenticated():
             entry.user = sender.user
         entry.save()
@@ -37,12 +37,12 @@ def invalid_entry(sender=None, form=None, **kwargs):
 
 def redirect_to_new_transcription(request, document_set):
     doc_set = get_object_or_404(models.DocumentSet, slug=document_set)
-    
+
     #document_id = resolve(urlparse(request.META['HTTP_REFERER']).path).kwargs['document_id']
-    
+
     candidates = doc_set.get_pending_documents()
-    
-    if request.user.is_authenticated():     
+
+    if request.user.is_authenticated():
         candidates = candidates.exclude(form_entries__user=request.user)
 
     if candidates.count() == 0:
@@ -83,4 +83,5 @@ def transcription_new(request, document_set, document_id):
 
     return {
         'document': document,
+        'head_html': document.document_set.head_html
     }
