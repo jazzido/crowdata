@@ -1,14 +1,19 @@
-import csv
+import csv, sys
 from datetime import datetime
 
 import django.db.models
 import django.http
+from django.utils.translation import ugettext, ugettext_lazy as _
 from django.contrib import admin
 from django.utils.safestring import mark_safe
 from django.db.models import Count
+from django.db import transaction
 from django.conf.urls import patterns, url
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render_to_response, redirect
+from django.template import RequestContext
 from django.core.urlresolvers import reverse
+from django.contrib import messages
+
 
 from django_ace import AceWidget
 from nested_inlines.admin import NestedModelAdmin,NestedTabularInline, NestedStackedInline
@@ -47,9 +52,47 @@ class DocumentSetAdmin(NestedModelAdmin):
         extra_urls = patterns('',
                               url('^(?P<document_set_id>\d+)/answers/$',
                                   self.admin_site.admin_view(self.answers_view),
-                                  name="document_set_answers_csv")
+                                  name="document_set_answers_csv"),
+                              url('^(?P<document_set_id>\d+)/add_documents/$',
+                                  self.admin_site.admin_view(self.add_documents_view),
+                                  name='document_set_add_documents')
                              )
         return extra_urls + urls
+
+    def add_documents_view(self, request, document_set_id):
+        document_set = get_object_or_404(self.model, pk=document_set_id)
+        if request.FILES.get('csv_file'):
+            # got a CSV, process, check and create
+            csvreader = csv.reader(request.FILES.get('csv_file'))
+            csvreader.next() # skip the header
+            count = 0
+            try:
+                with transaction.commit_on_success():
+                    for row in csvreader:
+                        print row
+                        document_set.documents.create(name=row[0],
+                                                      url=row[1])
+                        count += 1
+            except:
+                print sys.exc_info()
+                messages.error(request,
+                               _('Could not create documents'))
+
+                return redirect(reverse('admin:document_set_add_documents',
+                                        args=(document_set_id,)))
+
+            messages.info(request,
+                          _('Successfully created %(count)d documents') % { 'count': count })
+
+            return redirect(reverse('admin:crowdataapp_documentset_changelist'))
+
+        else:
+            return render_to_response('admin/document_set_add_documents.html',
+                                      {
+                                          'document_set': document_set,
+                                          'current_app': self.admin_site.name,
+                                      },
+                                      RequestContext(request))
 
     def answers_view(self, request, document_set_id):
         document_set = get_object_or_404(self.model, pk=document_set_id)

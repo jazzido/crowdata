@@ -66,6 +66,7 @@ class DocumentSet(models.Model):
         kw = {"args": (self.id,)}
         links = [
             (_("Export all answers to CSV"), reverse("admin:document_set_answers_csv", **kw)),
+            (_("Add Documents to this document set"), reverse("admin:document_set_add_documents", **kw))
         ]
         for i, (text, url) in enumerate(links):
             links[i] = "<a href='%s'>%s</a>" % (url, ugettext(text))

@@ -81,12 +81,15 @@ MIDDLEWARE_CLASSES = (
     'debug_toolbar.middleware.DebugToolbarMiddleware',
 )
 
+MESSAGE_STORAGE = 'django.contrib.messages.storage.cookie.CookieStorage'
+
 ROOT_URLCONF = 'crowdata.urls'
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     # other context processors
     'django.contrib.auth.context_processors.auth',
     'django.core.context_processors.request',
+    'django.contrib.messages.context_processors.messages'
 )
 
 TEMPLATE_DIRS = (
