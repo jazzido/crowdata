@@ -121,7 +121,10 @@ class DocumentSetAdmin(NestedModelAdmin):
         return rv
 
     def document_count(self, obj):
-        return obj.documents.count()
+        l = '<a href="%s?document_set__id=%s">%s</a>' % (reverse("admin:crowdataapp_document_changelist"),
+                                                           obj.pk,
+                                                           obj.documents.count())
+        return mark_safe(l)
 
 
 class DocumentSetFormEntryInline(admin.TabularInline):
