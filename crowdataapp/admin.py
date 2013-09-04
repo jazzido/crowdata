@@ -64,17 +64,17 @@ class DocumentSetAdmin(NestedModelAdmin):
         if request.FILES.get('csv_file'):
             # got a CSV, process, check and create
             csvreader = csv.reader(request.FILES.get('csv_file'))
-            csvreader.next() # skip the header
+            # TODO validate that first row are headers: document_title, document_url
+            csvreader.next()
             count = 0
             try:
                 with transaction.commit_on_success():
                     for row in csvreader:
                         print row
-                        document_set.documents.create(name=row[0],
-                                                      url=row[1])
+                        document_set.documents.create(name=row[0].strip(),
+                                                      url=row[1].strip())
                         count += 1
             except:
-                print sys.exc_info()
                 messages.error(request,
                                _('Could not create documents'))
 
