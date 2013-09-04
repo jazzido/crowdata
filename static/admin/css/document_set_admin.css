@@ -2,6 +2,10 @@
   width: 10%;
 }
 
+#id_entries_threshold {
+  width: 5%;
+}
+
 .crowdataapp-documentset.change-form div#form-0-fields-group input[type="checkbox"] {
   margin-left: 10px;
 }

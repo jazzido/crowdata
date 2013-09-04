@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404, render_to_response, redirect
 from django.template import RequestContext
 from django.core.urlresolvers import reverse
 from django.contrib import messages
+from django.forms import TextInput
 
 
 from django_ace import AceWidget
@@ -60,12 +61,19 @@ class DocumentSetAdmin(NestedModelAdmin):
         return extra_urls + urls
 
     def add_documents_view(self, request, document_set_id):
+        """ add a bunch of documents to a DocumentSet by uploading a CSV """
         document_set = get_object_or_404(self.model, pk=document_set_id)
         if request.FILES.get('csv_file'):
             # got a CSV, process, check and create
             csvreader = csv.reader(request.FILES.get('csv_file'))
+
             # TODO validate that first row are headers: document_title, document_url
-            csvreader.next()
+            header_row = csvreader.next()
+            if [h.strip() for h in header_row] != ['document_title', 'document_url']:
+                messages.error(request,
+                               _('Header cells must be <code>document_title</code> and <code>document_url</code>'))
+
+
             count = 0
             try:
                 with transaction.commit_on_success():
