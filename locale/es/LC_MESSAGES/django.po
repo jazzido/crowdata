@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-07-05 21:54-0500\n"
-"PO-Revision-Date: 2013-07-06 00:05-0300\n"
+"POT-Creation-Date: 2013-09-03 19:22-0500\n"
+"PO-Revision-Date: 2013-09-03 21:25-0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: \n"
@@ -18,44 +18,79 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: crowdataapp/models.py:21
+#: crowdataapp/admin.py:79
+msgid "Could not create documents"
+msgstr "No se pudieron crear los documentos"
+
+#: crowdataapp/admin.py:85
+#, python-format
+msgid "Successfully created %(count)d documents"
+msgstr "Se crearon %(count)d documentos"
+
+#: crowdataapp/models.py:45
 msgid "Document set name"
 msgstr "Nombre del conjunto de documentos"
 
-#: crowdataapp/models.py:25
+#: crowdataapp/models.py:49
 msgid ""
 "Javascript function to insert the document into the DOM. Receives the URL of "
 "the document as its only parameter. Must be called insertDocument"
-msgstr "Función de javascript para insertar el document en el DOM. Recibe el URL del documento como único parámetro. Debe llamarse 'insertDocument'"
+msgstr ""
+"Función de javascript para insertar el document en el DOM. Recibe el URL del "
+"documento como único parámetro. Debe llamarse 'insertDocument'"
 
-#: crowdataapp/models.py:28
+#: crowdataapp/models.py:52
 msgid "Maximum number of times each document will be shown to users."
 msgstr "Máxima cantidad de veces que se mostrará cada documento"
 
-#: crowdataapp/models.py:31
+#: crowdataapp/models.py:56
+msgid "HTML to be inserted in the <head> element in this page"
+msgstr "HTML a ser insertado en el elemento <head>"
+
+#: crowdataapp/models.py:59
 msgid "Document Set"
 msgstr "Conjunto de documentos"
 
-#: crowdataapp/models.py:32
+#: crowdataapp/models.py:60
 msgid "Document Sets"
 msgstr "Conjuntos de documentos"
 
-#: crowdataapp/models.py:40
+#: crowdataapp/models.py:68
 msgid "Export all answers to CSV"
 msgstr "Exportar todas las respuestas a CSV"
 
 #: crowdataapp/models.py:69
+msgid "Add Documents to this document set"
+msgstr "Agregar documentos a este Conjunto de Documentos"
+
+#: crowdataapp/models.py:139
+msgid "Autocomplete"
+msgstr "Autocompletar"
+
+#: crowdataapp/models.py:140
+msgid "If checked, this text field will have autocompletion"
+msgstr "Si está activado, este campo de texto tendrá autocompletado"
+
+#: crowdataapp/models.py:142
+msgid "Order"
+msgstr "Orden"
+
+#: crowdataapp/models.py:188
 msgid "Document title"
 msgstr "Título del documento"
 
-#: crowdataapp/models.py:70
+#: crowdataapp/models.py:189
 msgid "Document URL"
 msgstr "URL del documento"
 
-#: crowdataapp/models.py:81
+#: crowdataapp/models.py:258
 msgid "Document"
 msgstr "Documento"
 
-#: crowdataapp/models.py:82
+#: crowdataapp/models.py:259
 msgid "Documents"
 msgstr "Documentos"
+
+#: templates/admin/base_site.html:4 templates/admin/base_site.html.py:7
+msgid "CrowData Administration"
+msgstr "Administración de CrowData"
