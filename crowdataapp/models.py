@@ -113,15 +113,7 @@ class DocumentSet(models.Model):
             HAVING max(c) < %s
         )
             """
-
         return self.documents.extra(where=[q], params=[self.id, self.entries_threshold])
-
-
-
-#         return Document \
-#                     .objects.annotate(entries_count=Count('form_entries')) \
-#                     .filter(document_set=self,
-#                             entries_count__lt=self.entries_threshold)
 
 class DocumentSetForm(forms_builder.forms.models.AbstractForm):
     document_set = models.ForeignKey(DocumentSet, unique=True, related_name='form')
