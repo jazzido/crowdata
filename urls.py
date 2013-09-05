@@ -5,7 +5,7 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
-                       url(r'^', include('crowdataapp.urls')),
+                       url(r'^cd/^', include('crowdataapp.urls')),
                        url(r'^admin/', include(admin.site.urls)),
                        url(r'^forms/', include(forms_builder.forms.urls)),
 )
