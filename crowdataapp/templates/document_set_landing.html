@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% load crowdataapp_tags %}
+{% load static from staticfiles %}
+{% block content %}
+<div class="pure-u-2-3">
+  <p>This is the landing page for document set <strong>{{document_set.name}}</strong></p>
+  <p><a href="">Give me one document!</a></p>
+</div>
+{% endblock %}

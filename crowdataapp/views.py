@@ -1,5 +1,4 @@
 # coding: utf-8
-
 from urlparse import urlparse
 
 from django.shortcuts import get_object_or_404, redirect, render_to_response
@@ -13,6 +12,12 @@ from annoying.decorators import render_to
 from forms_builder.forms.signals import form_valid, form_invalid
 from forms_builder.forms.forms import FormForForm
 from crowdataapp import models
+
+@render_to('document_set_landing.html')
+def document_set_landing(request, document_set):
+    document_set = get_object_or_404(models.DocumentSet, slug=document_set)
+    return { 'document_set': document_set }
+
 
 @receiver(form_valid)
 def create_entry(sender=None, form=None, entry=None, **kwargs):
