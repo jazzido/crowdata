@@ -1,0 +1,23 @@
+/* .inline-group table tbody td.field-user_link { */
+/*   width: 10%; */
+/* } */
+
+#form_entries-group table thead th:first-child {
+  width: 25%;
+}
+
+#form_entries-group table thead th:nth-child(2) {
+  width: 35%;
+}
+
+td.original {
+  width: 0 !important; height: 0;
+}
+
+td.original p {
+  display: none;
+}
+
+td.field-user_link {
+  text-align: left;
+}

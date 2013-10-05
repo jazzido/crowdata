@@ -43,7 +43,6 @@ class DocumentSetAdmin(NestedModelAdmin):
 
     formfield_overrides = {
         django.db.models.TextField: {'widget': AceWidget(mode='javascript') },
-        django.db.models.TextField: {'widget': AceWidget(mode='html') }
     }
     list_display = ('name', 'document_count', 'admin_links')
     inlines = [DocumentSetFormInline]
@@ -136,10 +135,11 @@ class DocumentSetAdmin(NestedModelAdmin):
 
 
 class DocumentSetFormEntryInline(admin.TabularInline):
-    fields = ('user_link', 'answers')
-    readonly_fields = ('user_link', 'answers')
+    fields = ('user_link', 'answers', 'entry_time')
+    readonly_fields = ('user_link', 'answers', 'entry_time')
     list_select_related = True
     model = models.DocumentSetFormEntry
+    extra = 0
 
     def answers(self, obj):
         rv = '<ul>'
@@ -159,6 +159,11 @@ class DocumentSetFormEntryInline(admin.TabularInline):
 
 class DocumentAdmin(admin.ModelAdmin):
 
+    class Media:
+        css = {
+            'all': ('admin/css/document_admin.css', )
+        }
+
     def queryset(self, request):
         return models.Document.objects.annotate(entries_count=Count('form_entries'))
 
@@ -174,5 +179,6 @@ class DocumentAdmin(admin.ModelAdmin):
 admin.site.register(models.DocumentSet, DocumentSetAdmin)
 admin.site.register(models.Document, DocumentAdmin)
 admin.site.unregister(forms_builder.forms.models.Form)
+
 from django.contrib.sites.models import Site
 admin.site.unregister(Site)
