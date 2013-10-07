@@ -41,9 +41,9 @@ class DocumentSetAdmin(NestedModelAdmin):
         }
         js = ('admin/js/document_set_admin.js',)
 
-    formfield_overrides = {
-        django.db.models.TextField: {'widget': AceWidget(mode='javascript') },
-    }
+    # formfield_overrides = {
+    #     django.db.models.TextField: {'widget': AceWidget(mode='javascript') },
+    # }
     list_display = ('name', 'document_count', 'admin_links')
     inlines = [DocumentSetFormInline]
 
