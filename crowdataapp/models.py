@@ -96,22 +96,22 @@ class DocumentSet(models.Model):
         """
 
         q = """
-        id IN (
-            SELECT DISTINCT id FROM
-                (SELECT *,
-                        "crowdataapp_documentsetfieldentry"."value",
-                        "crowdataapp_documentsetfieldentry"."field_id",
-                        COUNT("crowdataapp_documentsetfieldentry"."value") AS "c"
-                 FROM "crowdataapp_document"
-                     LEFT OUTER JOIN "crowdataapp_documentsetformentry" ON ("crowdataapp_document"."id" = "crowdataapp_documentsetformentry"."document_id")
-                     LEFT OUTER JOIN "crowdataapp_documentsetfieldentry" ON ("crowdataapp_documentsetformentry"."id" = "crowdataapp_documentsetfieldentry"."entry_id")
-                 WHERE "crowdataapp_document"."document_set_id" = %s
-                 GROUP BY    "crowdataapp_documentsetfieldentry"."value",
-                             "crowdataapp_documentsetfieldentry"."field_id",
-                             "crowdataapp_document"."id" )
-            GROUP BY field_id, id
-            HAVING max(c) < %s
-        )
+            id IN
+              (SELECT DISTINCT `id`
+               FROM
+                 (SELECT `crowdataapp_document`.`id`,
+                         ds_field_entry.`value`,
+                         ds_field_entry.`field_id`,
+                         COUNT(ds_field_entry.`value`) AS c
+                  FROM crowdataapp_document
+                  LEFT OUTER JOIN crowdataapp_documentsetformentry ds_form_entry ON (crowdataapp_document.id = ds_form_entry.document_id)
+                  LEFT OUTER JOIN crowdataapp_documentsetfieldentry ds_field_entry ON (ds_form_entry.id = ds_field_entry.entry_id)
+                  WHERE crowdataapp_document.document_set_id = %s
+                  GROUP BY ds_field_entry.`value`,
+                           ds_field_entry.field_id,
+                           crowdataapp_document.id) AS T
+               GROUP BY field_id,
+                        id HAVING max(c) < %s)
             """
         return self.documents.extra(where=[q], params=[self.id, self.entries_threshold])
 
