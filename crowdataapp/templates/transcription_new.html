@@ -10,14 +10,13 @@
   <div id="document-viewer-container"></div>
 </div>
 <div class="pure-u-2-5" id="form-container">
-{{ document.name }}
 {% render_form document.document_set.form.all.0 %}
 </div>
 <script>
   {{ document.document_set.template_function|safe }}
   insertDocument('{{document.url|safe}}');
 </script>
-<script>
+<script type="text/javascript">
 $(function() {
     var FORM_SUBMITTED = '<h1>Thanks for your help!</h1><button id="another">Want another file?</button>';
     $('form').on('submit', function(event) {
@@ -33,7 +32,8 @@ $(function() {
     $(document).on('click',
                    'button#another',
                   function(data) {
-                      location = '/' + location.pathname.split('\/')[1] + '/another';
+                      var parts = location.pathname.split('\/');
+                      location = '/' + parts[1] + '/' + parts[2] + '/another';
                   });
 });
 </script>
