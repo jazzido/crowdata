@@ -95,25 +95,30 @@ class DocumentSet(models.Model):
         DocumentSet.get_pending_documents(): returns a django.db.models.query.QuerySet, giving the document set's documents that were no already validated. Note that since it is a QuerySet it is possible to filter them later without an extra query.
         """
 
-        q = """
-            id IN
-              (SELECT DISTINCT `id`
-               FROM
-                 (SELECT `crowdataapp_document`.`id`,
-                         ds_field_entry.`value`,
-                         ds_field_entry.`field_id`,
-                         COUNT(ds_field_entry.`value`) AS c
-                  FROM crowdataapp_document
-                  LEFT OUTER JOIN crowdataapp_documentsetformentry ds_form_entry ON (crowdataapp_document.id = ds_form_entry.document_id)
-                  LEFT OUTER JOIN crowdataapp_documentsetfieldentry ds_field_entry ON (ds_form_entry.id = ds_field_entry.entry_id)
-                  WHERE crowdataapp_document.document_set_id = %s
-                  GROUP BY ds_field_entry.`value`,
-                           ds_field_entry.field_id,
-                           crowdataapp_document.id) AS T
-               GROUP BY field_id,
-                        id HAVING max(c) < %s)
-            """
-        return self.documents.extra(where=[q], params=[self.id, self.entries_threshold])
+        # TODO Creo que esto esta mal. Deberia considerar el DocumentSetFormEntry en lugar del DocumentSetFieldEntry
+        # q = """
+        #     id IN
+        #       (SELECT DISTINCT `id`
+        #        FROM
+        #          (SELECT `crowdataapp_document`.`id`,
+        #                  ds_field_entry.`value`,
+        #                  ds_field_entry.`field_id`,
+        #                  COUNT(ds_field_entry.`value`) AS c
+        #           FROM crowdataapp_document
+        #           LEFT OUTER JOIN crowdataapp_documentsetformentry ds_form_entry ON (crowdataapp_document.id = ds_form_entry.document_id)
+        #           LEFT OUTER JOIN crowdataapp_documentsetfieldentry ds_field_entry ON (ds_form_entry.id = ds_field_entry.entry_id)
+        #           WHERE crowdataapp_document.document_set_id = %s
+        #           GROUP BY ds_field_entry.`value`,
+        #                    ds_field_entry.field_id,
+        #                    crowdataapp_document.id) AS T
+        #        GROUP BY field_id,
+        #                 id HAVING max(c) < %s)
+        #     """
+        # return self.documents.extra(where=[q], params=[self.id, self.entries_threshold])
+
+        return Document.objects.exclude(id__in=Document.objects.annotate(c=Count('form_entries'))
+                                        .filter(document_set=self.id)
+                                        .filter(c__gte=self.entries_threshold))
 
 class DocumentSetForm(forms_builder.forms.models.AbstractForm):
     document_set = models.ForeignKey(DocumentSet, unique=True, related_name='form')
@@ -212,13 +217,14 @@ class Document(models.Model):
 #         That's that the non-so-efficient field_coincidences is called
 
         coincidence_count = self.__field_coincidences(field)
-        return float(coincidence_count) / self.form_entries.count()
+        fec = self.form_entries.count()
+        return float(coincidence_count) / (fec if fec > 0 else 1)
 
     def __field_coincidences(self, field):
         """
             Returns how many times a same value for a field was given.
         """
-        result = DocumentSetFieldEntry.objects.values('value').annotate(count=Count('value')).filter(entry__document=self, field=field).order_by('-count')
+        result = DocumentSetFieldEntry.objects.values('value').annotate(count=Count('value')).filter(entry__document=self, field_id=field.pk).order_by('-count')
         return result[0]['count'] if result else 0
 
     def validated(self):
