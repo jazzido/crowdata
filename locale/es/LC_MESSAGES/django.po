@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-09-03 19:22-0500\n"
-"PO-Revision-Date: 2013-09-03 21:25-0300\n"
+"POT-Creation-Date: 2013-10-11 12:53-0400\n"
+"PO-Revision-Date: 2013-10-11 12:50-0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: \n"
@@ -18,11 +18,19 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: crowdataapp/admin.py:79
+#: crowdataapp/admin.py:73
+msgid ""
+"Header cells must be <code>document_title</code> and <code>document_url</"
+"code>"
+msgstr ""
+"Las celdas del encabezado deben ser <code>document_title</code> y "
+"<code>document_url</code>"
+
+#: crowdataapp/admin.py:86
 msgid "Could not create documents"
 msgstr "No se pudieron crear los documentos"
 
-#: crowdataapp/admin.py:85
+#: crowdataapp/admin.py:92
 #, python-format
 msgid "Successfully created %(count)d documents"
 msgstr "Se crearon %(count)d documentos"
@@ -63,31 +71,31 @@ msgstr "Exportar todas las respuestas a CSV"
 msgid "Add Documents to this document set"
 msgstr "Agregar documentos a este Conjunto de Documentos"
 
-#: crowdataapp/models.py:139
+#: crowdataapp/models.py:136
 msgid "Autocomplete"
 msgstr "Autocompletar"
 
-#: crowdataapp/models.py:140
+#: crowdataapp/models.py:137
 msgid "If checked, this text field will have autocompletion"
 msgstr "Si está activado, este campo de texto tendrá autocompletado"
 
-#: crowdataapp/models.py:142
+#: crowdataapp/models.py:139
 msgid "Order"
 msgstr "Orden"
 
-#: crowdataapp/models.py:188
+#: crowdataapp/models.py:185
 msgid "Document title"
 msgstr "Título del documento"
 
-#: crowdataapp/models.py:189
+#: crowdataapp/models.py:186
 msgid "Document URL"
 msgstr "URL del documento"
 
-#: crowdataapp/models.py:258
+#: crowdataapp/models.py:256
 msgid "Document"
 msgstr "Documento"
 
-#: crowdataapp/models.py:259
+#: crowdataapp/models.py:257
 msgid "Documents"
 msgstr "Documentos"
 
