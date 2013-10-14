@@ -59,6 +59,9 @@ class DocumentSet(models.Model):
                                  null=True,
                                  help_text=_('HTML to be inserted in the <head> element in this page'))
 
+    created_at = models.DateTimeField(auto_now_add = True)
+    updated_at = models.DateTimeField(auto_now = True)
+
     class Meta:
         verbose_name = _('Document Set')
         verbose_name_plural = _('Document Sets')
