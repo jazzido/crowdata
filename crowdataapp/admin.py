@@ -41,10 +41,19 @@ class DocumentSetAdmin(NestedModelAdmin):
         }
         js = ('admin/js/document_set_admin.js',)
 
-    # formfield_overrides = {
-    #     django.db.models.TextField: {'widget': AceWidget(mode='javascript') },
-    # }
+    formfield_overrides = {
+        django.db.models.TextField: {'widget': AceWidget() },
+    }
+
     list_display = ('name', 'document_count', 'admin_links')
+    fieldsets = (
+        (_('Document Set Description'), {
+            'fields': ('name', 'description')
+        }),
+        (_('Document Set Behaviour'), {
+            'fields': ('entries_threshold', 'template_function', 'head_html')
+        })
+    )
     inlines = [DocumentSetFormInline]
 
     def get_urls(self):
