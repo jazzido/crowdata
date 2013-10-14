@@ -13,11 +13,17 @@ from forms_builder.forms.signals import form_valid, form_invalid
 from forms_builder.forms.forms import FormForForm
 from crowdataapp import models
 
-@render_to('document_set_landing.html')
-def document_set_landing(request, document_set):
-    document_set = get_object_or_404(models.DocumentSet, slug=document_set)
-    return { 'document_set': document_set }
+@render_to('document_set_index.html')
+def document_set_index(request):
+    document_sets = models.DocumentSet.objects.order_by('-created_at')
+    return { 'document_sets': document_sets }
 
+@render_to('document_set_landing.html')
+def document_set_view(request, document_set):
+    return {
+        'document_set': get_object_or_404(models.DocumentSet,
+                                          slug=document_set)
+    }
 
 @receiver(form_valid)
 def create_entry(sender=None, form=None, entry=None, **kwargs):

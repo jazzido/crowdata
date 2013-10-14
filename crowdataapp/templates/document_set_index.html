@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load crowdataapp_tags %}
+{% load static from staticfiles %}
+{% block content %}
+<div class="pure-u-1">
+  <h2>Current Projects</h2>
+  <ul>
+    {% for ds in document_sets %}
+    <li><h3><a href="{{ds.get_absolute_url}}">{{ds.name}}</a></h3></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

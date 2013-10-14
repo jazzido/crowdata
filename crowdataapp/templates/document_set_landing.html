@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% load crowdataapp_tags %}
 {% load static from staticfiles %}
+{% load i18n %}
 {% block content %}
 <div class="pure-u-2-3">
-  <p>This is the landing page for document set <strong>{{document_set.name}}</strong></p>
-  <p><a href="">Give me one document!</a></p>
+  <p>{% blocktrans %}This is the landing page for document set <strong>{{document_set.name}}</strong>{% endblocktrans %}</p>
+  <p><a href="{% url 'get_new_transcription' document_set.slug %}">{% trans "Give me one document!" %}</a></p>
 </div>
 {% endblock %}
