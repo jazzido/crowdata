@@ -173,19 +173,18 @@ class DocumentAdmin(admin.ModelAdmin):
             'all': ('admin/css/document_admin.css', )
         }
 
+    readonly_fields = ('document_set', 'stored_validity_rate',)
+
     def queryset(self, request):
         return models.Document.objects.annotate(entries_count=Count('form_entries'))
 
-    list_display = ('name', 'entries_count', 'validity_rate', 'document_set')
+    list_display = ('name', 'entries_count', 'stored_validity_rate', 'document_set')
     list_filter = ('document_set__name',)
     inlines = [DocumentSetFormEntryInline]
 
     def entries_count(self, doc):
         return doc.entries_count
     entries_count.admin_order_field = 'entries_count'
-
-    def validity_rate(self, doc):
-        return doc.validity_rate()
 
 
 admin.site.register(models.DocumentSet, DocumentSetAdmin)

@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render_to_response
 from django.dispatch import receiver
 from django.core.urlresolvers import resolve, reverse
 from django.db.models import Count
+from django.db.models.signals import post_save
 from django.template import RequestContext
 from django.http import HttpResponse
 
@@ -37,6 +38,10 @@ def create_entry(sender=None, form=None, entry=None, **kwargs):
         if sender.user.is_authenticated():
             entry.user = sender.user
         entry.save()
+
+        entry.document.stored_validity_rate = entry.document.validity_rate()
+        entry.document.save()
+
     except:
         # should probably delete the 'entry' here
         entry.delete()
@@ -57,7 +62,7 @@ def redirect_to_new_transcription(request, document_set):
         candidates = candidates.exclude(form_entries__user=request.user)
 
     if candidates.count() == 0:
-        # TODO What to do? What to do?
+        # TODO Redirect to a message page: "you've gone through all the documents in this project!"
         pass
     else:
         return redirect(candidates.order_by('?')[0])

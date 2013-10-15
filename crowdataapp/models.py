@@ -174,6 +174,7 @@ class Document(models.Model):
     name = models.CharField(_('Document title'), max_length=256, editable=True, null=True)
     url = models.URLField(_('Document URL'), max_length='512', editable=True)
     document_set = models.ForeignKey(DocumentSet, related_name='documents')
+    stored_validity_rate = models.DecimalField(null=False, default=0, max_digits=3, decimal_places=2)
 
     def __unicode__(self):
         return "%s (%s)" % (self.name, self.url) if self.name else self.url
