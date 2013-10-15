@@ -1,8 +1,6 @@
 # coding: utf-8
-from urlparse import urlparse
-
 from django.shortcuts import get_object_or_404, redirect, render_to_response
-from django.dispatch import receiver
+
 from django.core.urlresolvers import resolve, reverse
 from django.db.models import Count
 from django.db.models.signals import post_save
@@ -10,8 +8,9 @@ from django.template import RequestContext
 from django.http import HttpResponse
 
 from annoying.decorators import render_to
-from forms_builder.forms.signals import form_valid, form_invalid
 from forms_builder.forms.forms import FormForForm
+from forms_builder.forms.signals import form_valid, form_invalid
+
 from crowdataapp import models
 
 @render_to('document_set_index.html')
@@ -26,35 +25,8 @@ def document_set_view(request, document_set):
                                           slug=document_set)
     }
 
-@receiver(form_valid)
-def create_entry(sender=None, form=None, entry=None, **kwargs):
-    # get the document_id for this entry from the referrer
-    # hacky, but it works
-
-    try:
-        document_id = resolve(urlparse(sender.META['HTTP_REFERER']).path).kwargs['document_id']
-        entry.document = models.Document.objects.get(pk=document_id)
-
-        if sender.user.is_authenticated():
-            entry.user = sender.user
-        entry.save()
-
-        entry.document.stored_validity_rate = entry.document.validity_rate()
-        entry.document.save()
-
-    except:
-        # should probably delete the 'entry' here
-        entry.delete()
-        raise
-
-@receiver(form_invalid)
-def invalid_entry(sender=None, form=None, **kwargs):
-    print repr(form.errors)
-
 def redirect_to_new_transcription(request, document_set):
     doc_set = get_object_or_404(models.DocumentSet, slug=document_set)
-
-    #document_id = resolve(urlparse(request.META['HTTP_REFERER']).path).kwargs['document_id']
 
     candidates = doc_set.get_pending_documents()
 

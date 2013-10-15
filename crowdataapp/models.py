@@ -6,8 +6,9 @@ from django.db.models import Count
 
 
 from django_extensions.db import fields as django_extensions_fields
-
 import forms_builder
+import forms_builder.forms.fields
+import forms_builder.forms.models
 
 DEFAULT_TEMPLATE_JS = """// Javascript function to insert the document into the DOM.
 // Receives the URL of the document as its only parameter.
