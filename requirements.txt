@@ -6,3 +6,4 @@ django_annoying>=0.7.7
 django-ace>=0.3.1
 -e git+git://github.com/Soaa-/django-nested-inlines.git#egg=django-nested-inlines
 django-admintheme>=0.2
+django-browserid>=0.9
