@@ -110,6 +110,12 @@ class DocumentSet(models.Model):
                                         .filter(document_set=self.id)
                                         .filter(c__gte=self.entries_threshold))
 
+
+    def leaderboard(self):
+        """ Returns a queryset of the biggest contributors (User) to this DocumentSet """
+        return User.objects.filter(documentsetformentry__form__document_set=self).annotate(num_entries=Count('documentsetformentry'))
+
+
 class DocumentSetForm(forms_builder.forms.models.AbstractForm):
     document_set = models.ForeignKey(DocumentSet, unique=True, related_name='form')
     #document_set = models.OneToOneField(DocumentSet, parent_link=True)

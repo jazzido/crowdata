@@ -6,5 +6,24 @@
 <div class="pure-u-2-3">
   <p>{% blocktrans %}This is the landing page for document set <strong>{{document_set.name}}</strong>{% endblocktrans %}</p>
   <p><a href="{% url 'get_new_transcription' document_set.slug %}">{% trans "Give me one document!" %}</a></p>
+  <h3>{% trans "Who's reviewed the most documents" %}</h3>
+  <table class="pure-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>{% trans "User" %}</th>
+        <th>{% trans "Score" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in document_set.leaderboard|slice:":10" %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ user }}</td>
+        <td>{{ user.num_entries }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% endblock %}
