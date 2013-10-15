@@ -6,6 +6,8 @@ from django.db.models import Count
 from django.db.models.signals import post_save
 from django.template import RequestContext
 from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+
 
 from annoying.decorators import render_to
 from forms_builder.forms.forms import FormForForm
@@ -60,9 +62,11 @@ def form_detail(request, slug, template="forms/form_detail.html"):
         else:
             entry = form_for_form.save()
             form_valid.send(sender=request, form=form_for_form, entry=entry)
-            return HttpResponse('') #redirect(reverse('form_sent', kwargs={"slug": form.slug}))
+            return HttpResponse('')
     return render_to_response(template, { 'form': form }, request_context)
 
+
+@login_required
 @render_to('transcription_new.html')
 def transcription_new(request, document_set, document_id):
     document = get_object_or_404(models.Document,
@@ -73,3 +77,20 @@ def transcription_new(request, document_set, document_id):
         'document': document,
         'head_html': document.document_set.head_html
     }
+
+@render_to('login_page.html')
+def login(request):
+    if 'next' in request.GET:
+        request.session['redirect_after_login'] = request.GET['next']
+
+    return {}
+
+def after_login(request):
+    # TODO: if user hasn't completed his profile, ask him/her to do so.
+    # (we need his/her name, ask if he wants to appear in the leaderboards, etc)
+    if 'redirect_after_login' in request.session:
+        redir = request.session['redirect_after_login']
+        del request.session['redirect_after_login']
+        return redirect(redir)
+    else:
+        return redirect(reverse('document_set_index'))

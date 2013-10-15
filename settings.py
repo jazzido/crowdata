@@ -138,9 +138,11 @@ LOGGING = {
  }
 
 SITE_URL = 'http://localhost:8000'
-LOGIN_URL = '/'
-LOGIN_REDIRECT_URL = '/'
-LOGIN_REDIRECT_URL_FAILURE = '/'
+LOGIN_URL = '/cd/pleaselogin'
+LOGIN_REDIRECT_URL = '/cd/afterlogin'
+LOGOUT_REDIRECT_URL = '/cd'
+LOGIN_REDIRECT_URL_FAILURE = '/cd/loginfailure'
+BROWSERID_REQUEST_ARGS = { 'siteName': 'CrowData' }
 # settings.py
 BROWSERID_CREATE_USER = True
 def username(email):
