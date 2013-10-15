@@ -121,11 +121,31 @@ AUTHENTICATION_BACKENDS = (
    'django_browserid.auth.BrowserIDBackend',
 )
 
+LOGGING = {
+    'version': 1,
+    'handlers': {
+        'console':{
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler'
+        },
+    },
+    'loggers': {
+        'django_browserid': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        }
+    },
+ }
 
-import logging
-l = logging.getLogger('django.db.backends')
-l.setLevel(logging.DEBUG)
-l.addHandler(logging.StreamHandler())
+SITE_URL = 'http://localhost:8000'
+LOGIN_URL = '/'
+LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL_FAILURE = '/'
+# settings.py
+BROWSERID_CREATE_USER = True
+def username(email):
+    return email.rsplit('@', 1)[0]
+BROWSERID_USERNAME_ALGO = username
 
 try:
     from local_settings import *
