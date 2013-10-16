@@ -149,6 +149,8 @@ def username(email):
     return email.rsplit('@', 1)[0]
 BROWSERID_USERNAME_ALGO = username
 
+AUTH_PROFILE_MODULE = 'crowdataapp.UserProfile'
+
 try:
     from local_settings import *
 except ImportError:

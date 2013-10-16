@@ -4,8 +4,8 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db.models import Count
 
-
 from django_extensions.db import fields as django_extensions_fields
+from django_countries import CountryField
 import forms_builder
 import forms_builder.forms.fields
 import forms_builder.forms.models
@@ -39,6 +39,14 @@ ALLOWED_FIELD_TYPES = (
 forms_builder.forms.models.Field._meta.local_fields[3]._choices \
     = filter(lambda i: i[0] in ALLOWED_FIELD_TYPES,
              forms_builder.forms.fields.NAMES)
+
+class UserProfile(models.Model):
+    user = models.ForeignKey(User, unique=True)
+    name = models.CharField(_('Your Name'), max_length='128', null=False, blank=False)
+    country = CountryField(_('Your country'), null=True)
+    show_in_leaderboard = models.BooleanField(_("Appear in the leaderboards"),
+                                              default=True,
+                                              help_text=_("If checked, you will appear in CrowData's leaderboards"))
 
 
 class DocumentSet(models.Model):
@@ -123,6 +131,7 @@ class DocumentSetForm(forms_builder.forms.models.AbstractForm):
     def autocomplete_fields(self):
         """ Returns a list of every text field with autocompletion enabled """
         return self.fields.all()
+
 
     @models.permalink
     def get_absolute_url(self):
