@@ -21,7 +21,8 @@ def create_entry(sender=None, form=None, entry=None, **kwargs):
             entry.user = sender.user
         entry.save()
 
-        entry.document.stored_validity_rate = entry.document.validity_rate()
+        # stored_validity_rate is a Decimal, need to convert float to str for storing
+        entry.document.stored_validity_rate = str(entry.document.validity_rate())
         entry.document.save()
 
     except:
