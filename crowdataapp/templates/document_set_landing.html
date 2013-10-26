@@ -4,7 +4,10 @@
 {% load i18n %}
 {% block content %}
 <div class="pure-u-2-3">
-  <p>{% blocktrans %}This is the landing page for document set <strong>{{document_set.name}}</strong>{% endblocktrans %}</p>
+  <h2><strong>{{document_set.name}}</strong></h2>
+  {% if document_set.description %}
+  <p>{{document_set.description}}</p>
+  {% endif %}
   <p><a href="{% url 'get_new_transcription' document_set.slug %}">{% trans "Give me one document!" %}</a></p>
   <h3>{% trans "Who's reviewed the most documents" %}</h3>
   <table class="pure-table">

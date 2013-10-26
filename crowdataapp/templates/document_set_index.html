@@ -6,7 +6,13 @@
   <h2>Current Projects</h2>
   <ul>
     {% for ds in document_sets %}
-    <li><h3><a href="{{ds.get_absolute_url}}">{{ds.name}}</a></h3></li>
+    <li>
+      <h3><a href="{{ds.get_absolute_url}}">{{ds.name}}</a></h3>
+      {% if ds.description %}
+      <p>{{ds.description}}</p>
+      {% endif %}
+      <p>
+    </li>
     {% endfor %}
   </ul>
 </div>
