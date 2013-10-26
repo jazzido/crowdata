@@ -24,7 +24,7 @@
     </div>
     <div class="pure-u-1-5" id="authentication">
       {% if user.is_authenticated %}
-        Hi, {{ user.username }} — {% browserid_logout text='Logout' %}
+        Hi, {{ user.get_profile.name }} — {% browserid_logout text='Logout' %}
       {% else %}
         {% browserid_login text='Login' color='dark' %}
       {% endif %}
