@@ -54,6 +54,7 @@ class DocumentSet(models.Model):
     name = models.CharField(_('Document set name'), max_length='128',)
 
     description = models.TextField(null=True,
+                                   blank=True,
                                    help_text=_('Description for this Document Set'))
 
     slug = django_extensions_fields.AutoSlugField(populate_from=('name'))
