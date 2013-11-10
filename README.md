@@ -7,10 +7,14 @@ Easily crowdsource the analysis of your documents
 ## Installation
 
     pip install -r requirements.txt
+
+Rename `local_settings.py.example` to `local_settings.py` and adjust the settings there.
+
+Then,
+
     python manage.py syncdb
     python manage.py migrate --all
-    
-
+    python manage.py runserver_plus
 
 Copyright (C) 2013 Manuel Aristarán <jazzido@jazzido.com>
 
