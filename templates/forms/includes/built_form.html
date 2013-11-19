@@ -9,6 +9,7 @@
   {% csrf_token %}
   {% for field in form_for_form %}
   {{ field.label_tag }}
+  <p class="field_help">{{ field.help_text }}</p>
   {{ field }}
   {% endfor %}
   <div style="clear:left;">&nbsp;</div>
