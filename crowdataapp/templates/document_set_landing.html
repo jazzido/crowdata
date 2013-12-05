@@ -8,7 +8,7 @@
   {% if document_set.description %}
   <p>{{document_set.description}}</p>
   {% endif %}
-  <p><a href="{% url 'get_new_transcription' document_set.slug %}">{% trans "Give me one document!" %}</a></p>
+  <p><a href="{% url 'new_transcription' document_set.slug %}">{% trans "Give me one document!" %}</a></p>
   <h3>{% trans "Who's reviewed the most documents" %}</h3>
   <table class="pure-table">
     <thead>
