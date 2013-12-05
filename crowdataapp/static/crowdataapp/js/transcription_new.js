@@ -14,6 +14,6 @@ $(function() {
                    'button#another',
                    function(data) {
                        var parts = location.pathname.split('\/');
-                       location = '/' + parts[1] + '/' + parts[2] + '/another';
+                       location = '/' + parts[1] + '/' + parts[2] + '/new_transcription';
                    });
 });

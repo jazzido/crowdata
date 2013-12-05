@@ -28,21 +28,6 @@ def document_set_view(request, document_set):
                                           slug=document_set)
     }
 
-def redirect_to_new_transcription(request, document_set):
-    doc_set = get_object_or_404(models.DocumentSet, slug=document_set)
-
-    candidates = doc_set.get_pending_documents()
-
-    if request.user.is_authenticated():
-        candidates = candidates.exclude(form_entries__user=request.user)
-
-    if candidates.count() == 0:
-        # TODO Redirect to a message page: "you've gone through all the documents in this project!"
-        pass
-    else:
-        return redirect(candidates.order_by('?')[0])
-
-
 def form_detail(request, slug, template="forms/form_detail.html"):
     form = get_object_or_404(models.DocumentSetForm, slug=slug)
     request_context = RequestContext(request)
@@ -55,22 +40,36 @@ def form_detail(request, slug, template="forms/form_detail.html"):
             form_invalid.send(sender=request, form=form_for_form)
         else:
             entry = form_for_form.save()
-            form_valid.send(sender=request, form=form_for_form, entry=entry)
+            form_valid.send(sender=request, form=form_for_form, entry=entry, document_id=request.session['document_id_for_entry'])
             return HttpResponse('')
     return render_to_response(template, { 'form': form }, request_context)
 
 
 @login_required
-@render_to('transcription_new.html')
-def transcription_new(request, document_set, document_id):
-    document = get_object_or_404(models.Document,
-                                 pk=document_id,
-                                 document_set__slug=document_set)
+def transcription_new(request, document_set):
+    doc_set = get_object_or_404(models.DocumentSet, slug=document_set)
 
-    return {
-        'document': document,
-        'head_html': document.document_set.head_html
-    }
+    candidates = doc_set.get_pending_documents() \
+                        .exclude(form_entries__user=request.user)
+
+    if candidates.count() == 0:
+        # TODO Redirect to a message page: "you've gone through all the documents in this project!"
+        return render_to_response('no_more_documents.html',
+                                  { 'document_set': doc_set },
+                                  context_instance=RequestContext(request))
+
+    document = candidates.order_by('?')[0]
+
+    # save the candidate document in the session, for later use
+    # in signals.create_entry
+    request.session['document_id_for_entry'] = document.id
+
+    return render_to_response('transcription_new.html',
+                              {
+                                  'document': document,
+                                  'head_html': document.document_set.head_html
+                              },
+                              context_instance=RequestContext(request))
 
 @render_to('login_page.html')
 def login(request):
