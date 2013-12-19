@@ -211,7 +211,7 @@ class DocumentAdmin(admin.ModelAdmin):
 
     list_display = ('name', 'entries_count', 'stored_validity_rate', 'document_set')
     list_filter = ('document_set__name',)
-    inlines = [DocumentSetFormEntryInline, DocumentSetRankingDefinitionInline]
+    inlines = [DocumentSetFormEntryInline]
 
     def entries_count(self, doc):
         return doc.entries_count
