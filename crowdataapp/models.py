@@ -186,6 +186,23 @@ class DocumentSetFieldEntry(forms_builder.forms.models.AbstractFieldEntry):
     entry = models.ForeignKey("DocumentSetFormEntry", related_name="fields")
     #field = models.ForeignKey("DocumentSetFormField", related_name="entry_fields")
 
+class DocumentSetRankingDefinition(models.Model):
+    """ the definition of a ranking (leaderboard of sorts) for a DocumentSet """
+
+    GROUPING_FUNCTIONS = (
+        ('AVG', _('Average')),
+        ('COUNT', _('Count')),
+        ('SUM', _('Sum')),
+    )
+
+    name = models.CharField(_('Ranking title'), max_length=256, editable=True, null=False)
+    document_set = models.ForeignKey(DocumentSet, related_name='ranking_documents')
+    label_field = models.ForeignKey(DocumentSetFormField, related_name='label_fields')
+    magnitude_field = models.ForeignKey(DocumentSetFormField, related_name='magnitude_fields', null=True, blank=True)
+    grouping_function = models.CharField(_('Grouping Function'),
+                                         max_length=10,
+                                         choices=GROUPING_FUNCTIONS,
+                                         default='SUM')
 
 class Document(models.Model):
     name = models.CharField(_('Document title'), max_length=256, editable=True, null=True)

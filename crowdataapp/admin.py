@@ -1,4 +1,4 @@
-import csv, sys
+import csv, sys, re
 from datetime import datetime
 
 import django.db.models
@@ -33,6 +33,37 @@ class DocumentSetFormInline(NestedStackedInline):
     inlines = [DocumentSetFormFieldAdmin]
     show_url = False
 
+class DocumentSetRankingDefinitionInline(NestedTabularInline):
+    fields = ('name', 'label_field', 'magnitude_field', 'grouping_function')
+    model = models.DocumentSetRankingDefinition
+    max_num = 2
+
+    LABEL_TYPES = (
+        forms_builder.forms.fields.TEXT,
+        forms_builder.forms.fields.SELECT,
+        forms_builder.forms.fields.RADIO_MULTIPLE,
+    )
+
+    MAGNITUDE_TYPES = (
+        forms_builder.forms.fields.NUMBER,
+    )
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        # this sucks
+        document_set_id = int(re.search('documentset/(\d+)', request.path).groups()[0])
+        document_set = models.DocumentSet.objects.get(pk=document_set_id)
+        qs = models.DocumentSetFormField.objects.filter(form__document_set=document_set)
+
+        if db_field.name == 'label_field':
+            # get fields from this document_set form that can only act as labels
+            kwargs["queryset"] = qs.filter(field_type__in=self.LABEL_TYPES)
+        elif db_field.name == 'magnitude_field':
+            # get fields from this document_set form that can only act as magnitudes
+            kwargs["queryset"] = qs.filter(field_type__in=self.MAGNITUDE_TYPES)
+            pass
+        return super(DocumentSetRankingDefinitionInline, self) \
+            .formfield_for_foreignkey(db_field, request, **kwargs)
+
 class DocumentSetAdmin(NestedModelAdmin):
 
     class Media:
@@ -54,7 +85,7 @@ class DocumentSetAdmin(NestedModelAdmin):
             'fields': ('entries_threshold', 'template_function', 'head_html')
         })
     )
-    inlines = [DocumentSetFormInline]
+    inlines = [DocumentSetFormInline, DocumentSetRankingDefinitionInline]
 
     def get_urls(self):
         urls = super(DocumentSetAdmin, self).get_urls()
@@ -180,7 +211,7 @@ class DocumentAdmin(admin.ModelAdmin):
 
     list_display = ('name', 'entries_count', 'stored_validity_rate', 'document_set')
     list_filter = ('document_set__name',)
-    inlines = [DocumentSetFormEntryInline]
+    inlines = [DocumentSetFormEntryInline, DocumentSetRankingDefinitionInline]
 
     def entries_count(self, doc):
         return doc.entries_count
