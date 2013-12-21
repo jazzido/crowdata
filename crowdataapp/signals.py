@@ -24,9 +24,7 @@ def create_entry(sender=None, form=None, entry=None, document_id=None, **kwargs)
         entry.user = request.user
         entry.save()
 
-        # stored_validity_rate is a Decimal, need to convert float to str for storing
-        entry.document.stored_validity_rate = str(entry.document.validity_rate())
-        entry.document.save()
+        entry.document.verify()
     except:
         # should probably delete the 'entry' here
         entry.delete()

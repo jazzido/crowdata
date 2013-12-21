@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django.db import models
 from django.utils.translation import ugettext, ugettext_lazy as _
 from django.contrib.auth.models import User
@@ -63,7 +65,7 @@ class DocumentSet(models.Model):
                                          help_text=_('Javascript function to insert the document into the DOM. Receives the URL of the document as its only parameter. Must be called insertDocument'))
     entries_threshold = models.IntegerField(default=3,
                                             null=False,
-                                            help_text=_('Maximum number of times each document will be shown to users.'))
+                                            help_text=_('Minimum number of coincidental answers for a field before marking it as valid'))
 
     head_html = models.TextField(default='<!-- <script> or <link rel="stylesheet"> tags go here -->',
                                  null=True,
@@ -113,11 +115,9 @@ class DocumentSet(models.Model):
 
     def get_pending_documents(self):
         """
-        DocumentSet.get_pending_documents(): returns a django.db.models.query.QuerySet, giving the document set's documents that were no already validated. Note that since it is a QuerySet it is possible to filter them later without an extra query.
+        DocumentSet.get_pending_documents(): returns a django.db.models.query.QuerySet, giving the document set's documents that haven't been verified
         """
-        return Document.objects.exclude(id__in=Document.objects.annotate(c=Count('form_entries'))
-                                        .filter(document_set=self.id)
-                                        .filter(c__gte=self.entries_threshold))
+        return self.documents.filter(verified=False)
 
 
     def leaderboard(self):
@@ -181,10 +181,13 @@ class DocumentSetFormEntry(forms_builder.forms.models.AbstractFormEntry):
 
         return rv
 
+    def get_answer_for_field(self, field):
+        return self.fields.filter(field_id=field.pk)[0].value
+
 
 class DocumentSetFieldEntry(forms_builder.forms.models.AbstractFieldEntry):
     entry = models.ForeignKey("DocumentSetFormEntry", related_name="fields")
-    #field = models.ForeignKey("DocumentSetFormField", related_name="entry_fields")
+    verified = models.BooleanField(default=False, null=False)
 
 class DocumentSetRankingDefinition(models.Model):
     """ the definition of a ranking (leaderboard of sorts) for a DocumentSet """
@@ -208,7 +211,11 @@ class Document(models.Model):
     name = models.CharField(_('Document title'), max_length=256, editable=True, null=True)
     url = models.URLField(_('Document URL'), max_length='512', editable=True)
     document_set = models.ForeignKey(DocumentSet, related_name='documents')
-    stored_validity_rate = models.DecimalField(null=False, default=0, max_digits=3, decimal_places=2)
+    verified = models.BooleanField(_('Verified'), help_text=_('Is this document verified?'))
+
+    entries_threshold_override = models.IntegerField(null=True,
+                                                     blank=True,
+                                                     help_text=_('Minimum number of coincidental answers for a field before marking it as valid. Overrides the default value set in the Document Set this Document belongs to'))
 
     def __unicode__(self):
         return "%s (%s)" % (self.name, self.url) if self.name else self.url
@@ -217,63 +224,63 @@ class Document(models.Model):
         return reverse('crowdataapp.views.transcription_new',
                        args=[self.document_set.slug, self.pk])
 
-    def validity_rate(self):
-        """
-            Document.validity_rate(): a 0 to 1 rate which shows how much controversial (or difficult to read maybe) was the document, even if it is already considered validated. It is implemented as the avarage of the ratio of each field (defined as the number of matching responses / total responses).
 
-            avg of validity per fields:
-        """
-
-        # TODO: find a more elegant solution, maybe in a sigle query.
-        counts = [self.__field_validity_rate(field) for field in DocumentSetFormField.objects.filter(form__document_set=self.document_set)]
-        return sum(counts)/len(counts)
+    def entries_threshold(self):
+        if self.entries_threshold_override is None:
+            return self.document_set.entries_threshold
+        else:
+            return self.entries_threshold_override
 
 
-    def __field_validity_rate(self, field):
-        """
-            Field: a DocumentSetFormEntry
-        """
+    def verified_anwers(self):
+        if not self.verified:
+            return {}
 
-#         I think the elegant solution is this:
-#         return DocumentSetFieldEntry.objects.values('value').annotate(c=Count('value')).filter(entry__document_id=self.id, field_id=field.id).order_by('c').aggregate(Avg('c'))
-#         But it seams to be a bug in django models that results in this error: "DatabaseError: near "FROM": syntax error"
-#         https://code.djangoproject.com/ticket/15624
-#         That's that the non-so-efficient field_coincidences is called
+        answers = {}
+        fe = DocumentSetFieldEntry.objects.filter(entry__in=self.form_entries.all(),
+                                                  verified=True)
 
-        coincidence_count = self.__field_coincidences(field)
-        fec = self.form_entries.count()
-        return float(coincidence_count) / (fec if fec > 0 else 1)
 
-    def __field_coincidences(self, field):
-        """
-            Returns how many times a same value for a field was given.
-        """
-        result = DocumentSetFieldEntry.objects.values('value').annotate(count=Count('value')).filter(entry__document=self, field_id=field.pk).order_by('-count')
-        return result[0]['count'] if result else 0
 
-    def validated(self):
-        """
-            Document.validated(): returns True if the document has at least the document set's threshold coincidental entries for each DocumentSetFormField. That way, if, for example, if threshold=3, and a field receives three different answers for the same field, it won't be considered validated, until it has three matching answers.
+    def verify(self):
+        # almost direct port from ProPublica's Transcribable.
+        # Thanks @ashaw! :)
 
-            True if each entry has more than the required threshold equal values; thus, the document was successfully crod scrapped.
-            This is not right: is inconsistent with get_pending_documents, which interprets the threshold per entry.
-        """
-        threshold = self.document_set.entries_threshold
-        return all([self.__field_coincidences(field) >= threshold for field in DocumentSetFormField.objects.filter(form__document_set_id=self.document_set.id)])
+        form_entries = self.form_entries.all()
+        form_fields = self.document_set.form.all()[0].fields.all()
+        aggregate = defaultdict(dict)
+        for field in form_fields:
+            aggregate[field] = defaultdict(lambda: 0)
 
-    def get_answer(self, key):
-        """
-            Document.get_answer(): takes and entry key (its slug) and return a tuple with: the most coincidental value, how many matching answers it has and its validity rate (defined as the number of matching responses / total responses).
+        for fe in form_entries:
+            for field in form_fields:
+                aggregate[field][fe.get_answer_for_field(field)] += 1
 
-            returns the most repeated value for a given field, it occurences and its validity rate in a tuple
-        """
-        max_field_count = DocumentSetFieldEntry.objects \
-                .filter(entry__document=self, field__slug=key) \
-                .values('value').annotate(count=Count('value')) \
-                .order_by()[0]
+        chosen = {}
+        for field, answers in aggregate.items():
+            for answer, answer_ct in answers.items():
+                if answer_ct > self.entries_threshold:
+                    chosen[field] = max(answers.items(), lambda i: i[1])[0]
 
-        total_field_count = self.form_entries.count()
-        return (max_field_count['value'], max_field_count['count'], float(max_field_count['count']) / self.form_entries.count())
+
+        if len(chosen.keys()) == len(form_fields):
+            for field, verified_answer in chosen:
+                DocumentSetFieldEntry.objects.filter(entry__in=form_entries,
+                                                     field_id=f.pk,
+                                                     value=verified_answer) \
+                                             .update(verified=True)
+            self.verified = True
+        else:
+            self.verified = False
+
+        self.save()
+
+
+    def unverify(self):
+        DocumentSetFieldEntry.objects.filter(entry__in=self.form_entries.all()) \
+                                     .update(verified=False)
+        self.verified = False
+        self.save()
 
 
     class Meta:

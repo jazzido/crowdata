@@ -1,3 +1,4 @@
+# coding: utf-8
 import csv, sys, re
 from datetime import datetime
 
@@ -184,7 +185,7 @@ class DocumentSetFormEntryInline(admin.TabularInline):
     def answers(self, obj):
         rv = '<ul>'
         form_fields = obj.form.fields.all()
-        rv += ''.join(["<li>%s: <strong>%s</strong></li>" % (f.label, e.value)
+        rv += ''.join(["<li>%s: <strong>%s</strong>%s</li>" % (f.label, e.value, '✓' if e.verified else '')
                        for f, e in zip(form_fields,
                                        obj.fields.all())])
         rv += '</ul>'
@@ -204,14 +205,21 @@ class DocumentAdmin(admin.ModelAdmin):
             'all': ('admin/css/document_admin.css', )
         }
 
-    readonly_fields = ('document_set', 'stored_validity_rate',)
+    fields = ('name', 'url', 'document_set_link', 'verified')
+    readonly_fields = ('document_set_link','verified')
 
     def queryset(self, request):
         return models.Document.objects.annotate(entries_count=Count('form_entries'))
 
-    list_display = ('name', 'entries_count', 'stored_validity_rate', 'document_set')
+    list_display = ('name', 'verified', 'entries_count', 'document_set')
     list_filter = ('document_set__name',)
     inlines = [DocumentSetFormEntryInline]
+
+    def document_set_link(self, obj):
+        # crowdataapp_documentset_change
+        change_url = reverse('admin:crowdataapp_documentset_change', args=(obj.document_set.id,))
+        return mark_safe('<a href="%s">%s</a>' % (change_url, obj.document_set.name))
+    document_set_link.short_description = _('Document Set')
 
     def entries_count(self, doc):
         return doc.entries_count
