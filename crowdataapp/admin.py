@@ -73,9 +73,9 @@ class DocumentSetAdmin(NestedModelAdmin):
         }
         js = ('admin/js/document_set_admin.js',)
 
-    formfield_overrides = {
-        django.db.models.TextField: {'widget': AceWidget() },
-    }
+    #formfield_overrides = {
+    #    django.db.models.TextField: {'widget': AceWidget() },
+    #}
 
     list_display = ('name', 'document_count', 'admin_links')
     fieldsets = (
@@ -119,14 +119,13 @@ class DocumentSetAdmin(NestedModelAdmin):
             header_row = csvreader.next()
             if [h.strip() for h in header_row] != ['document_title', 'document_url']:
                 messages.error(request,
-                               _('Header cells must be <code>document_title</code> and <code>document_url</code>'))
+                               _('Header cells must be document_title and document_url'))
 
 
             count = 0
             try:
                 with transaction.commit_on_success():
                     for row in csvreader:
-                        print row
                         document_set.documents.create(name=row[0].strip(),
                                                       url=row[1].strip())
                         count += 1
