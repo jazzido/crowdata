@@ -86,7 +86,15 @@ class DocumentSetAdmin(NestedModelAdmin):
             'fields': ('entries_threshold', 'template_function', 'head_html')
         })
     )
-    inlines = [DocumentSetFormInline, DocumentSetRankingDefinitionInline]
+    inlines = ()
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        self.inlines = (DocumentSetFormInline, DocumentSetRankingDefinitionInline, )
+        return super(DocumentSetAdmin, self).change_view(request, object_id)
+
+    def add_view(self, request, form_url='', extra_context=None):
+        self.inlines = (DocumentSetFormInline,)
+        return super(DocumentSetAdmin, self).add_view(request)
 
     def get_urls(self):
         urls = super(DocumentSetAdmin, self).get_urls()
