@@ -1,7 +1,6 @@
 # coding: utf-8
-import csv, sys, re
+import csv, sys, re, json
 from datetime import datetime
-
 import django.db.models
 import django.http
 from django.utils.translation import ugettext, ugettext_lazy as _
@@ -15,7 +14,7 @@ from django.template import RequestContext
 from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.forms import TextInput
-
+from django.views.decorators.csrf import csrf_exempt
 
 from django_ace import AceWidget
 from nested_inlines.admin import NestedModelAdmin,NestedTabularInline, NestedStackedInline
@@ -115,7 +114,6 @@ class DocumentSetAdmin(NestedModelAdmin):
             # got a CSV, process, check and create
             csvreader = csv.reader(request.FILES.get('csv_file'))
 
-            # TODO validate that first row are headers: document_title, document_url
             header_row = csvreader.next()
             if [h.strip() for h in header_row] != ['document_title', 'document_url']:
                 messages.error(request,
@@ -190,12 +188,23 @@ class DocumentSetFormEntryInline(admin.TabularInline):
     extra = 0
 
     def answers(self, obj):
+        field_template = "<li><input type=\"checkbox\" data-field-entry=\"%d\" data-document=\"%d\" data-entry-value=\"%s\" %s><span class=\"%s\">%s</span>: <strong>%s</strong></li>"
+        print field_template
         rv = '<ul>'
         form_fields = obj.form.fields.all()
-        rv += ''.join(["<li>%s: <strong>%s</strong>%s</li>" % (f.label, e.value, '✓' if e.verified else '')
+        rv += ''.join([field_template % (e.pk,
+                                         obj.document.pk,
+                                         e.value,
+                                         'checked' if e.verified else '',
+                                         'verify' if f.verify else '',
+                                         f.label,
+                                         e.value)
                        for f, e in zip(form_fields,
                                        obj.fields.all())])
         rv += '</ul>'
+
+        print 'caca'
+        print rv
 
         return mark_safe(rv)
 
@@ -211,16 +220,67 @@ class DocumentAdmin(admin.ModelAdmin):
         css = {
             'all': ('admin/css/document_admin.css', )
         }
+        js = ('admin/js/jquery-2.0.3.min.js', 'admin/js/nested.js', 'admin/js/document_admin.js',)
 
     fields = ('name', 'url', 'document_set_link', 'verified')
     readonly_fields = ('document_set_link','verified')
+    list_display = ('name', 'verified', 'entries_count', 'document_set')
+    list_filter = ('document_set__name',)
+    inlines = [DocumentSetFormEntryInline]
 
     def queryset(self, request):
         return models.Document.objects.annotate(entries_count=Count('form_entries'))
 
-    list_display = ('name', 'verified', 'entries_count', 'document_set')
-    list_filter = ('document_set__name',)
-    inlines = [DocumentSetFormEntryInline]
+    def get_urls(self):
+        urls = super(DocumentAdmin, self).get_urls()
+        my_urls = patterns('',
+                           (r'^(?P<document>\d+)/document_set_field_entry/(?P<document_set_field_entry>\d+)/$',
+                            self.admin_site.admin_view(self.field_entry_set))
+        )
+        return my_urls + urls
+
+    def field_entry_set(self, request, document, document_set_field_entry):
+        """ Set verify status for form field entries """
+        if request.method != 'POST':
+            return django.http.HttpResponseBadRequest()
+
+        document = get_object_or_404(models.Document, pk=document)
+        this_field_entry = get_object_or_404(models.DocumentSetFieldEntry, pk=document_set_field_entry)
+
+        # get all answers for the same document that match with this one
+        coincidental_field_entries = models.DocumentSetFieldEntry.objects.filter(field_id=this_field_entry.field_id,
+                                                                                 value=this_field_entry.value,
+                                                                                 entry__document=this_field_entry.entry.document
+        )
+
+        # set the verified state for all the matching answers
+        for fe in coincidental_field_entries:
+            fe.verified = (request.POST['verified'] == 'true')
+            fe.save()
+
+        # if there are verified answers for every field that's marked as 'verify'
+        # set this Document as verified
+        verified_fields = models.DocumentSetFormField \
+                                .objects \
+                                .filter(pk__in=set(map(lambda fe: fe.field_id,
+                                                       models.DocumentSetFieldEntry.objects.filter(entry__document=this_field_entry.entry.document,
+                                                                                                   verified=True))),
+                                        verify=True,
+                                        form=this_field_entry.entry.form)
+
+        print verified_fields
+        print models.DocumentSetFormField.objects.filter(verify=True,
+                                                         form=this_field_entry.entry.form)
+
+        document.verified = (len(verified_fields) == len(models.DocumentSetFormField.objects.filter(verify=True,
+                                                                                                    form=this_field_entry.entry.form)))
+
+        document.save()
+
+        return django.http.HttpResponse(json.dumps(map(lambda fe: fe.pk,
+                                                       coincidental_field_entries)),
+                                                   content_type="application/json")
+
 
     def document_set_link(self, obj):
         # crowdataapp_documentset_change
