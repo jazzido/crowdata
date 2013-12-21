@@ -143,6 +143,7 @@ class DocumentSetFormField(forms_builder.forms.models.AbstractField):
         help_text=_("If checked, this text field will have autocompletion"))
     form = models.ForeignKey(DocumentSetForm, related_name="fields")
     order = models.IntegerField(_("Order"), null=True, blank=True)
+    verify = models.BooleanField(_("Verify"), default=True)
 
     def save(self, *args, **kwargs):
         if self.order is None:
@@ -241,13 +242,12 @@ class Document(models.Model):
                                                   verified=True)
 
 
-
     def verify(self):
         # almost direct port from ProPublica's Transcribable.
         # Thanks @ashaw! :)
 
         form_entries = self.form_entries.all()
-        form_fields = self.document_set.form.all()[0].fields.all()
+        form_fields = self.document_set.form.all()[0].fields.filter(verify=True)
         aggregate = defaultdict(dict)
         for field in form_fields:
             aggregate[field] = defaultdict(lambda: 0)
