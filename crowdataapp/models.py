@@ -119,6 +119,9 @@ class DocumentSet(models.Model):
         """
         return self.documents.filter(verified=False)
 
+    def get_verified_documents(self):
+        return self.documents.filter(verified=True)
+
 
     def leaderboard(self):
         """ Returns a queryset of the biggest contributors (User) to this DocumentSet """
