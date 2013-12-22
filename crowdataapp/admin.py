@@ -203,9 +203,6 @@ class DocumentSetFormEntryInline(admin.TabularInline):
                                        obj.fields.all())])
         rv += '</ul>'
 
-        print 'caca'
-        print rv
-
         return mark_safe(rv)
 
 
@@ -250,8 +247,7 @@ class DocumentAdmin(admin.ModelAdmin):
         # get all answers for the same document that match with this one
         coincidental_field_entries = models.DocumentSetFieldEntry.objects.filter(field_id=this_field_entry.field_id,
                                                                                  value=this_field_entry.value,
-                                                                                 entry__document=this_field_entry.entry.document
-        )
+                                                                                 entry__document=this_field_entry.entry.document)
 
         # set the verified state for all the matching answers
         for fe in coincidental_field_entries:
@@ -267,10 +263,6 @@ class DocumentAdmin(admin.ModelAdmin):
                                                                                                    verified=True))),
                                         verify=True,
                                         form=this_field_entry.entry.form)
-
-        print verified_fields
-        print models.DocumentSetFormField.objects.filter(verify=True,
-                                                         form=this_field_entry.entry.form)
 
         document.verified = (len(verified_fields) == len(models.DocumentSetFormField.objects.filter(verify=True,
                                                                                                     form=this_field_entry.entry.form)))
