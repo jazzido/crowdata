@@ -1,4 +1,5 @@
 from collections import defaultdict
+from itertools import ifilter
 
 from django.db import models
 from django.utils.translation import ugettext, ugettext_lazy as _
@@ -114,9 +115,6 @@ class DocumentSet(models.Model):
             + [entry_time_name]
 
     def get_pending_documents(self):
-        """
-        DocumentSet.get_pending_documents(): returns a django.db.models.query.QuerySet, giving the document set's documents that haven't been verified
-        """
         return self.documents.filter(verified=False)
 
     def get_verified_documents(self):
@@ -203,19 +201,58 @@ class DocumentSetRankingDefinition(models.Model):
     )
 
     name = models.CharField(_('Ranking title'), max_length=256, editable=True, null=False)
-    document_set = models.ForeignKey(DocumentSet, related_name='ranking_documents')
+    document_set = models.ForeignKey(DocumentSet, related_name='rankings')
     label_field = models.ForeignKey(DocumentSetFormField, related_name='label_fields')
-    magnitude_field = models.ForeignKey(DocumentSetFormField, related_name='magnitude_fields', null=True, blank=True)
+    magnitude_field = models.ForeignKey(DocumentSetFormField,
+                                        related_name='magnitude_fields',
+                                        null=True, blank=True)
     grouping_function = models.CharField(_('Grouping Function'),
                                          max_length=10,
                                          choices=GROUPING_FUNCTIONS,
                                          default='SUM')
+    sort_order = models.BooleanField(_('Sort order'),
+                                     default=False,
+                                     help_text=_('Ascending if checked, descending otherwise'))
+
+
+    def calculate(self):
+        verified_answers = [doc.verified_answers()
+                            for doc in self.document_set.documents.filter(verified=True)]
+        rank = defaultdict(list)
+
+        for answer in verified_answers:
+            field = next(ifilter(lambda f: f == self.label_field,
+                                 answer.keys()),
+                         None)
+
+            if field is None:
+                continue
+
+            label_field_value = answer.get(field)
+            magnitude_field_value = answer.get(self.magnitude_field)
+
+            if label_field_value is not None and magnitude_field_value is not None:
+                rank[label_field_value].append(magnitude_field_value)
+
+
+        if self.grouping_function == 'COUNT':
+            mapper = lambda p: (p[0], len(p[1]))
+        elif self.grouping_function == 'SUM':
+            mapper = lambda p: (p[0], sum(map(float, p[1])))
+        elif self.grouping_function == 'AVG':
+            mapper = lambda p: (p[0],
+                                sum(map(float, p[1])) / float(len(p[1])))
+
+        return sorted(map(mapper,
+                          rank.iteritems()),
+                      key=lambda i: i[1], reverse=(not self.sort_order))
 
 class Document(models.Model):
     name = models.CharField(_('Document title'), max_length=256, editable=True, null=True)
     url = models.URLField(_('Document URL'), max_length='512', editable=True)
     document_set = models.ForeignKey(DocumentSet, related_name='documents')
-    verified = models.BooleanField(_('Verified'), help_text=_('Is this document verified?'))
+    verified = models.BooleanField(_('Verified'),
+                                   help_text=_('Is this document verified?'))
 
     entries_threshold_override = models.IntegerField(null=True,
                                                      blank=True,
@@ -236,14 +273,20 @@ class Document(models.Model):
             return self.entries_threshold_override
 
 
-    def verified_anwers(self):
+    def verified_answers(self):
+        """ get a dict of verified answers (entries) for this Document
+              { <DocumentSetFormField>: <value>, ... }
+        """
         if not self.verified:
             return {}
 
-        answers = {}
-        fe = DocumentSetFieldEntry.objects.filter(entry__in=self.form_entries.all(),
-                                                  verified=True)
+        verified_answers = {}
+        for form_entry in self.form_entries.all():
+            verified_answers.update({field: value
+                                      for (field, value) in [(DocumentSetFormField.objects.get(id=entry.field_id),
+                                                              entry.value) for entry in form_entry.fields.filter(verified=True)]})
 
+        return verified_answers
 
     def verify(self):
         # almost direct port from ProPublica's Transcribable.

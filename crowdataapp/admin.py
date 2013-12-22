@@ -34,7 +34,7 @@ class DocumentSetFormInline(NestedStackedInline):
     show_url = False
 
 class DocumentSetRankingDefinitionInline(NestedTabularInline):
-    fields = ('name', 'label_field', 'magnitude_field', 'grouping_function')
+    fields = ('name', 'label_field', 'magnitude_field', 'grouping_function', 'sort_order')
     model = models.DocumentSetRankingDefinition
     max_num = 2
 
@@ -56,11 +56,10 @@ class DocumentSetRankingDefinitionInline(NestedTabularInline):
 
         if db_field.name == 'label_field':
             # get fields from this document_set form that can only act as labels
-            kwargs["queryset"] = qs.filter(field_type__in=self.LABEL_TYPES)
+            kwargs["queryset"] = qs.filter(field_type__in=self.LABEL_TYPES, verify=True)
         elif db_field.name == 'magnitude_field':
             # get fields from this document_set form that can only act as magnitudes
-            kwargs["queryset"] = qs.filter(field_type__in=self.MAGNITUDE_TYPES)
-            pass
+            kwargs["queryset"] = qs.filter(field_type__in=self.MAGNITUDE_TYPES, verify=True)
         return super(DocumentSetRankingDefinitionInline, self) \
             .formfield_for_foreignkey(db_field, request, **kwargs)
 
@@ -71,10 +70,6 @@ class DocumentSetAdmin(NestedModelAdmin):
             'all': ('admin/css/document_set_admin.css', )
         }
         js = ('admin/js/document_set_admin.js',)
-
-    #formfield_overrides = {
-    #    django.db.models.TextField: {'widget': AceWidget() },
-    #}
 
     list_display = ('name', 'document_count', 'admin_links')
     fieldsets = (

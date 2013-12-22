@@ -37,3 +37,12 @@ def render_form(parser, token):
     except ValueError:
         raise template.TemplateSyntaxError(render_form.__doc__)
     return BuiltFormNode(name, value)
+
+@register.simple_tag(takes_context=True)
+def render_ranking(context, ranking_definition):
+    rank = ranking_definition.calculate()
+    t = get_template('ranking.html')
+    context['ranking'] = rank
+    r = t.render(context)
+    print r
+    return r

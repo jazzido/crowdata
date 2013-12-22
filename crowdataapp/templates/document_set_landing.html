@@ -29,4 +29,7 @@
     </tbody>
   </table>
 </div>
+{% for r in document_set.rankings.all %}
+{% render_ranking r %}
+{% endfor %}
 {% endblock %}
