@@ -13,6 +13,8 @@ import forms_builder
 import forms_builder.forms.fields
 import forms_builder.forms.models
 
+from crowdataapp.middleware import get_current_user
+
 DEFAULT_TEMPLATE_JS = """// Javascript function to insert the document into the DOM.
 // Receives the URL of the document as its only parameter.
 // Must be called insertDocument
@@ -51,8 +53,20 @@ class UserProfile(models.Model):
                                               default=True,
                                               help_text=_("If checked, you will appear in CrowData's leaderboards"))
 
+class DocumentSetManager(models.Manager):
+    def get_query_set(self):
+        u = get_current_user() # from LocalUserMiddleware
+        rv = super(DocumentSetManager, self).get_query_set()
+
+        # only get published if we got a User and is not staff/superuser
+        if (u is not None) and (not u.is_staff) and (not u.is_superuser):
+            rv = rv.filter(published=True)
+
+        return rv
 
 class DocumentSet(models.Model):
+
+    objects = DocumentSetManager()
 
     name = models.CharField(_('Document set name'), max_length='128',)
 
@@ -71,6 +85,10 @@ class DocumentSet(models.Model):
     head_html = models.TextField(default='<!-- <script> or <link rel="stylesheet"> tags go here -->',
                                  null=True,
                                  help_text=_('HTML to be inserted in the <head> element in this page'))
+
+    published = models.BooleanField(_('Published'),
+                                    default=True,
+                                    help_text=_('Is this Document Set published to non-admins?'))
 
     created_at = models.DateTimeField(auto_now_add = True)
     updated_at = models.DateTimeField(auto_now = True)

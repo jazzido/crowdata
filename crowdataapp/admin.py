@@ -74,7 +74,7 @@ class DocumentSetAdmin(NestedModelAdmin):
     list_display = ('name', 'document_count', 'admin_links')
     fieldsets = (
         (_('Document Set Description'), {
-            'fields': ('name', 'description')
+            'fields': ('name', 'description', 'published')
         }),
         (_('Document Set Behaviour'), {
             'fields': ('entries_threshold', 'template_function', 'head_html')
